@@ -5,254 +5,389 @@ import {
   View,
   TouchableOpacity,
   ScrollView,
+  SafeAreaView,
+  Alert,
+  StatusBar,
 } from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 
 export default function DashboardScreen() {
   const { user } = useAuth();
 
+  const handleClassificationPress = () => {
+    Alert.alert(
+      "Klasifikasi Sampah AI",
+      "Fitur pemindaian kamera AI sedang dalam pengembangan. Model klasifikasi sampah siap memproses 11 jenis sampah!",
+      [{ text: "OK" }]
+    );
+  };
+
   return (
-    <ScrollView contentContainerStyle={styles.welcomeContainer}>
-      {/* Header Dashboard */}
-      <View style={styles.welcomeHeader}>
-        <View style={styles.welcomeAvatarContainer}>
-          <View style={styles.welcomeAvatar}>
-            <Text style={styles.avatarLetter}>
-              {user?.username ? user.username[0].toUpperCase() : 'U'}
-            </Text>
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F4FAF6" />
+      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        
+        {/* Header Section */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.headerTitle}>EcoClassify</Text>
+            <View style={styles.statusRow}>
+              <View style={styles.statusDot} />
+              <Text style={styles.statusText}>Model siap!</Text>
+            </View>
           </View>
-          <View style={styles.onlineBadge} />
+          <TouchableOpacity 
+            style={styles.leafButton} 
+            activeOpacity={0.8}
+            onPress={() => Alert.alert("EcoClassify", `Halo ${user?.username || 'Pengguna'}! Model klasifikasi sampah AI siap digunakan.`)}
+          >
+            <Ionicons name="leaf" size={22} color="#1E4E2C" />
+          </TouchableOpacity>
         </View>
-        <Text style={styles.welcomeGreeting}>Halo, {user?.username || 'Pengguna'}!</Text>
-        <Text style={styles.welcomeSub}>Selamat datang di Dashboard Echo Tech</Text>
-      </View>
 
-      {/* Dashboard Stats */}
-      <View style={styles.statsRow}>
-        <View style={styles.statCard}>
-          <MaterialCommunityIcons name="recycle" size={28} color="#10B981" />
-          <Text style={styles.statNumber}>0 kg</Text>
-          <Text style={styles.statLabel}>Sampah Dideteksi</Text>
-        </View>
-        <View style={styles.statCard}>
-          <MaterialCommunityIcons name="medal-outline" size={28} color="#06B6D4" />
-          <Text style={styles.statNumber}>150</Text>
-          <Text style={styles.statLabel}>Eco Poin</Text>
-        </View>
-      </View>
+        {/* Main Card (Klasifikasi Sampah) */}
+        <TouchableOpacity style={styles.mainCard} activeOpacity={0.9} onPress={handleClassificationPress}>
+          <View style={styles.mainCardContent}>
+            <View style={styles.mainCardLeft}>
+              <Text style={styles.mainCardTitle}>Klasifikasi Sampah</Text>
+              <Text style={styles.mainCardSubtitle}>
+                Gunakan AI untuk mengenali jenis sampah secara otomatis
+              </Text>
+              <View style={styles.badgeContainer}>
+                <Ionicons name="bulb-outline" size={13} color="#FFF" style={styles.badgeIcon} />
+                <Text style={styles.badgeText}>Mendukung 11 jenis sampah</Text>
+              </View>
+            </View>
+            <View style={styles.mainCardRight}>
+              <View style={styles.cameraIconWrapper}>
+                <Ionicons name="camera" size={30} color="#FFF" />
+              </View>
+            </View>
+          </View>
+        </TouchableOpacity>
 
-      <View style={styles.statCardFull}>
-        <View style={styles.co2Header}>
-          <MaterialCommunityIcons name="cloud-outline" size={24} color="#06B6D4" />
-          <Text style={styles.co2Title}>Dampak Lingkungan Anda</Text>
-        </View>
-        <Text style={styles.statNumberLarge}>4.8 kg CO₂</Text>
-        <Text style={styles.statLabel}>Total karbon emisi yang berhasil dicegah dari daur ulang</Text>
-      </View>
+        {/* Category Cards (Organik & Anorganik Grid) */}
+        <View style={styles.gridContainer}>
+          {/* Organik Card */}
+          <View style={styles.categoryCard}>
+            <View style={[styles.iconCircle, styles.organikIconBg]}>
+              <Ionicons name="leaf-outline" size={20} color="#4CAF50" />
+            </View>
+            <Text style={styles.categoryTitle}>Organik</Text>
+            <Text style={styles.categorySubtitle}>6 Jenis</Text>
+          </View>
 
-      {/* Next Feature Section (Waste Detection) */}
-      <View style={styles.featurePreviewCard}>
-        <View style={styles.featureBadge}>
-          <Text style={styles.featureBadgeText}>SEGERA HADIR</Text>
+          {/* Anorganik Card */}
+          <View style={styles.categoryCard}>
+            <View style={[styles.iconCircle, styles.anorganikIconBg]}>
+              <Ionicons name="trash-outline" size={20} color="#2196F3" />
+            </View>
+            <Text style={styles.categoryTitle}>Anorganik</Text>
+            <Text style={styles.categorySubtitle}>5 Jenis</Text>
+          </View>
         </View>
-        <View style={styles.featureHeader}>
-          <Ionicons name="scan-circle" size={36} color="#10B981" />
-          <Text style={styles.featureTitle}>Klasifikasi Sampah AI</Text>
+
+        {/* Supported Waste Types Section */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionHeader}>Jenis Sampah yang Didukung</Text>
+
+          {/* Organik List */}
+          <View style={styles.categoryHeaderRow}>
+            <View style={[styles.indicatorBar, styles.organikBar]} />
+            <Text style={[styles.categoryHeaderLabel, styles.organikText]}>Organik</Text>
+          </View>
+          <View style={styles.tagsContainer}>
+            {['🍎 Buah', '🌸 Bunga', '🌿 Campuran', '🥩 Daging', '🍃 Daun', '🍴 Makanan'].map((tag, index) => (
+              <View key={index} style={styles.tagWrapper}>
+                <Text style={styles.tagText}>{tag}</Text>
+              </View>
+            ))}
+          </View>
+
+          {/* Anorganik List */}
+          <View style={[styles.categoryHeaderRow, styles.marginTop16]}>
+            <View style={[styles.indicatorBar, styles.anorganikBar]} />
+            <Text style={[styles.categoryHeaderLabel, styles.anorganikText]}>Anorganik</Text>
+          </View>
+          <View style={styles.tagsContainer}>
+            {['📦 Kardus', '📄 Kertas', '🍼 Plastik', '🥛 Kaca', '🔋 Logam'].map((tag, index) => (
+              <View key={index} style={styles.tagWrapper}>
+                <Text style={styles.tagText}>{tag}</Text>
+              </View>
+            ))}
+          </View>
         </View>
-        <Text style={styles.featureDesc}>
-          Gunakan kamera ponsel Anda untuk memindai sampah. Model Machine Learning Echo Tech akan otomatis mendeteksi jenis sampah (Organik, Anorganik, atau B3) menggunakan dataset Kaggle.
-        </Text>
-        <TouchableOpacity style={styles.disabledFeatureButton} disabled>
-          <Text style={styles.disabledButtonText}>Aktifkan Kamera Deteksi</Text>
+
+      </ScrollView>
+
+      {/* Floating Action Button */}
+      <View style={styles.floatingButtonContainer}>
+        <TouchableOpacity style={styles.floatingButton} activeOpacity={0.85} onPress={handleClassificationPress}>
+          <Ionicons name="camera" size={20} color="#FFF" style={styles.floatingButtonIcon} />
+          <Text style={styles.floatingButtonText}>Klasifikasi Sekarang</Text>
         </TouchableOpacity>
       </View>
-    </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  welcomeContainer: {
-    paddingHorizontal: 24,
-    paddingTop: 50,
-    paddingBottom: 40,
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#F4FAF6',
   },
-  welcomeHeader: {
-    alignItems: 'center',
-    marginBottom: 30,
+  scrollContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 180,
   },
-  welcomeAvatarContainer: {
-    position: 'relative',
-    marginBottom: 16,
-  },
-  welcomeAvatar: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: '#10B981',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: '#F9FAFB',
-  },
-  avatarLetter: {
-    color: '#fff',
-    fontSize: 36,
-    fontWeight: '800',
-    fontFamily: 'GeistSans-Bold',
-  },
-  onlineBadge: {
-    position: 'absolute',
-    bottom: 4,
-    right: 4,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: '#10B981',
-    borderWidth: 3,
-    borderColor: '#F9FAFB',
-  },
-  welcomeGreeting: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 6,
-    fontFamily: 'GeistSans-Bold',
-  },
-  welcomeSub: {
-    fontSize: 14,
-    color: '#64748B',
-    fontWeight: '500',
-    fontFamily: 'GeistSans-Medium',
-  },
-  statsRow: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  statCard: {
-    flex: 0.48,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 2,
+    marginBottom: 24,
+    marginTop: 8,
   },
-  statCardFull: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginBottom: 20,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 2,
-  },
-  co2Header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  co2Title: {
-    color: '#64748B',
-    fontSize: 14,
-    fontWeight: '600',
-    marginLeft: 8,
-    fontFamily: 'GeistSans-SemiBold',
-  },
-  statNumber: {
-    fontSize: 22,
+  headerTitle: {
+    fontSize: 28,
     fontWeight: '800',
-    color: '#0F172A',
-    marginTop: 10,
-    marginBottom: 4,
-    fontFamily: 'GeistSans-ExtraBold',
-  },
-  statNumberLarge: {
-    fontSize: 32,
-    fontWeight: '900',
-    color: '#06B6D4',
-    marginBottom: 4,
-    fontFamily: 'GeistSans-ExtraBold',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#64748B',
-    fontWeight: '500',
-    textAlign: 'center',
-    fontFamily: 'GeistSans-Medium',
-  },
-  featurePreviewCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.2)',
-    position: 'relative',
-    marginBottom: 30,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 2,
-  },
-  featureBadge: {
-    position: 'absolute',
-    top: -10,
-    right: 16,
-    backgroundColor: '#06B6D4',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-  },
-  featureBadgeText: {
-    color: '#fff',
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 0.8,
-    fontFamily: 'GeistSans-ExtraBold',
-  },
-  featureHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  featureTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#0F172A',
-    marginLeft: 10,
+    color: '#133B1C',
     fontFamily: 'GeistSans-Bold',
   },
-  featureDesc: {
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#4CAF50',
+    marginRight: 6,
+  },
+  statusText: {
     fontSize: 13,
-    color: '#475569',
+    color: '#4CAF50',
+    fontWeight: '600',
+    fontFamily: 'GeistSans-SemiBold',
+  },
+  leafButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  mainCard: {
+    backgroundColor: '#1E4E2C',
+    borderRadius: 24,
+    padding: 22,
+    marginBottom: 20,
+    shadowColor: '#1E4E2C',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  mainCardContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  mainCardLeft: {
+    flex: 0.75,
+  },
+  mainCardTitle: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '800',
+    marginBottom: 8,
+    fontFamily: 'GeistSans-Bold',
+  },
+  mainCardSubtitle: {
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontSize: 13,
     lineHeight: 18,
     marginBottom: 16,
     fontFamily: 'GeistSans-Regular',
   },
-  disabledFeatureButton: {
-    backgroundColor: 'rgba(16, 185, 129, 0.06)',
-    height: 48,
-    borderRadius: 12,
+  badgeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
+    borderRadius: 20,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    alignSelf: 'flex-start',
+  },
+  badgeIcon: {
+    marginRight: 6,
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+    fontFamily: 'GeistSans-Medium',
+  },
+  mainCardRight: {
+    flex: 0.25,
+    alignItems: 'flex-end',
+  },
+  cameraIconWrapper: {
+    width: 60,
+    height: 60,
+    borderRadius: 18,
+    backgroundColor: '#2D6F41',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.15)',
   },
-  disabledButtonText: {
-    color: 'rgba(16, 185, 129, 0.6)',
+  gridContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  categoryCard: {
+    flex: 0.48,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    elevation: 1.5,
+  },
+  iconCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  organikIconBg: {
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+  },
+  anorganikIconBg: {
+    backgroundColor: 'rgba(33, 150, 243, 0.1)',
+  },
+  categoryTitle: {
+    fontSize: 16,
     fontWeight: '700',
-    fontSize: 14,
+    color: '#1C1C1C',
+    marginBottom: 4,
     fontFamily: 'GeistSans-Bold',
   },
-});
+  categorySubtitle: {
+    fontSize: 12,
+    color: '#757575',
+    fontFamily: 'GeistSans-Regular',
+  },
+  sectionContainer: {
+    marginBottom: 20,
+  },
+  sectionHeader: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1C1C1C',
+    marginBottom: 16,
+    fontFamily: 'GeistSans-Bold',
+  },
+  categoryHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  marginTop16: {
+    marginTop: 16,
+  },
+  indicatorBar: {
+    width: 4,
+    height: 16,
+    borderRadius: 2,
+    marginRight: 8,
+  },
+  organikBar: {
+    backgroundColor: '#4CAF50',
+  },
+  anorganikBar: {
+    backgroundColor: '#2196F3',
+  },
+  categoryHeaderLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    fontFamily: 'GeistSans-Bold',
+  },
+  organikText: {
+    color: '#4CAF50',
+  },
+  anorganikText: {
+    color: '#2196F3',
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  tagWrapper: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#EAF2EC',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    marginRight: 8,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.01,
+    shadowRadius: 3,
+    elevation: 0.5,
+  },
+  tagText: {
+    fontSize: 13,
+    color: '#333333',
+    fontWeight: '500',
+    fontFamily: 'GeistSans-Medium',
+  },
+  floatingButtonContainer: {
+    position: 'absolute',
+    bottom: 100,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  floatingButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1E4E2C',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 30,
+    shadowColor: '#1E4E2C',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  floatingButtonIcon: {
+    marginRight: 8,
+  },
+  floatingButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+    fontFamily: 'GeistSans-Bold',
+  },
+});

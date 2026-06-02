@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
+  Animated,
+  Dimensions,
   StyleSheet,
   Text,
   View,
@@ -38,21 +40,92 @@ const SLIDES: Slide[] = [
   },
 ];
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
 export default function OnboardingScreen() {
   const navigation = useNavigation<any>();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const slideX = useRef(new Animated.Value(0)).current;
+  const slideOpacity = useRef(new Animated.Value(1)).current;
+
+  const animateToLogin = () => {
+    setIsAnimating(true);
+    Animated.parallel([
+      Animated.timing(slideX, {
+        toValue: -SCREEN_WIDTH,
+        duration: 260,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideOpacity, {
+        toValue: 0,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setIsAnimating(false);
+      navigation.navigate('Login');
+    });
+  };
+
+  const goToNextSlide = () => {
+    if (isAnimating) return;
+
+    if (currentSlide === SLIDES.length - 1) {
+      animateToLogin();
+      return;
+    }
+
+    setIsAnimating(true);
+    Animated.parallel([
+      Animated.timing(slideX, {
+        toValue: -SCREEN_WIDTH,
+        duration: 240,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideOpacity, {
+        toValue: 0,
+        duration: 180,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setCurrentSlide((prev) => prev + 1);
+      slideX.setValue(SCREEN_WIDTH);
+
+      Animated.parallel([
+        Animated.timing(slideX, {
+          toValue: 0,
+          duration: 280,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideOpacity, {
+          toValue: 1,
+          duration: 220,
+          useNativeDriver: true,
+        }),
+      ]).start(() => setIsAnimating(false));
+    });
+  };
 
   return (
     <View style={styles.onboardingContainer}>
       {/* Top Area: Skip Button */}
       <View style={styles.onboardingHeader}>
-        <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.skipBtn}>
+        <TouchableOpacity onPress={animateToLogin} style={styles.skipBtn} disabled={isAnimating}>
           <Text style={styles.skipBtnText}>Lewati</Text>
         </TouchableOpacity>
       </View>
 
       {/* Middle Area: Circles & Text */}
-      <View style={styles.onboardingMiddle}>
+      <Animated.View
+        style={[
+          styles.onboardingMiddle,
+          {
+            opacity: slideOpacity,
+            transform: [{ translateX: slideX }],
+          },
+        ]}
+      >
         <View style={styles.outerCircle}>
           <View style={styles.middleCircle}>
             <View style={styles.innerCircle}>
@@ -63,7 +136,7 @@ export default function OnboardingScreen() {
 
         <Text style={styles.onboardingTitle}>{SLIDES[currentSlide].title}</Text>
         <Text style={styles.onboardingDesc}>{SLIDES[currentSlide].description}</Text>
-      </View>
+      </Animated.View>
 
       {/* Bottom Area: Indicators & Button */}
       <View style={styles.onboardingBottom}>
@@ -81,13 +154,8 @@ export default function OnboardingScreen() {
 
         <TouchableOpacity
           style={styles.onboardingButton}
-          onPress={() => {
-            if (currentSlide < SLIDES.length - 1) {
-              setCurrentSlide(currentSlide + 1);
-            } else {
-              navigation.navigate('Login');
-            }
-          }}
+          onPress={goToNextSlide}
+          disabled={isAnimating}
         >
           <Text style={styles.onboardingButtonText}>
             {currentSlide === SLIDES.length - 1 ? 'Mulai Sekarang' : 'Selanjutnya'}

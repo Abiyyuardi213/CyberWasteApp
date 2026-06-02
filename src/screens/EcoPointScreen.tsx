@@ -8,8 +8,10 @@ import {
   ActivityIndicator,
   ProgressBarAndroid,
   Platform,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { fetchEcoPointData, finishRedeem, Reward, startRedeem } from '../store/ecoPointSlice';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 
@@ -19,13 +21,13 @@ const getLevelColor = (level: string) => {
     case 'Bronze':
       return '#CD7F32';
     case 'Silver':
-      return '#C0C0C0';
+      return '#A0A0A0';
     case 'Gold':
-      return '#FFD700';
+      return '#FFB300';
     case 'Platinum':
-      return '#E5E4E2';
+      return '#78909C';
     default:
-      return '#10B981';
+      return '#4CAF50';
   }
 };
 
@@ -43,7 +45,7 @@ const getLevelIcon = (level: string) => {
   }
 };
 
-// Progress bar component (karena ProgressBarAndroid hanya untuk Android)
+// Progress bar component
 const CustomProgressBar = ({ progress, color }: { progress: number; color: string }) => {
   if (Platform.OS === 'android') {
     return (
@@ -79,18 +81,18 @@ const RewardCard = ({
     activeOpacity={0.7}
   >
     <View style={[styles.rewardIconContainer, reward.available ? styles.rewardIconActive : styles.rewardIconDisabled]}>
-      <Ionicons name={reward.icon as any} size={28} color={reward.available ? '#10B981' : '#94A3B8'} />
+      <Ionicons name={reward.icon as any} size={26} color={reward.available ? '#4CAF50' : '#94A3B8'} />
     </View>
     <View style={styles.rewardContent}>
       <Text style={[styles.rewardName, !reward.available && styles.rewardNameDisabled]}>{reward.name}</Text>
       <Text style={[styles.rewardDescription, !reward.available && styles.rewardDescriptionDisabled]}>{reward.description}</Text>
     </View>
     {isRedeeming ? (
-      <ActivityIndicator color="#10B981" />
+      <ActivityIndicator color="#4CAF50" />
     ) : (
-      <View style={styles.rewardPointsContainer}>
-        <Text style={[styles.rewardPoints, !reward.available && styles.rewardPointsDisabled]}>{reward.points}</Text>
-        <MaterialCommunityIcons name="leaf" size={14} color={reward.available ? '#10B981' : '#94A3B8'} />
+      <View style={[styles.rewardPointsContainer, reward.available ? styles.rewardPointsActive : styles.rewardPointsDisabled]}>
+        <Text style={[styles.rewardPoints, !reward.available && styles.rewardPointsTextDisabled]}>{reward.points}</Text>
+        <Ionicons name="leaf-outline" size={13} color={reward.available ? '#4CAF50' : '#94A3B8'} />
       </View>
     )}
   </TouchableOpacity>
@@ -121,144 +123,169 @@ export default function EcoPointScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {loading && (
-        <View style={styles.asyncStatus}>
-          <ActivityIndicator color="#10B981" />
-          <Text style={styles.asyncStatusText}>Memuat data Eco Poin...</Text>
-        </View>
-      )}
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F4FAF6" />
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContainer}>
+        {loading && (
+          <View style={styles.asyncStatus}>
+            <ActivityIndicator color="#1E4E2C" size="small" />
+            <Text style={styles.asyncStatusText}>Memuat data Eco Poin...</Text>
+          </View>
+        )}
 
-      {error && (
-        <View style={[styles.asyncStatus, styles.asyncError]}>
-          <Ionicons name="alert-circle-outline" size={18} color="#EF4444" />
-          <Text style={[styles.asyncStatusText, styles.asyncErrorText]}>{error}</Text>
-        </View>
-      )}
+        {error && (
+          <View style={[styles.asyncStatus, styles.asyncError]}>
+            <Ionicons name="alert-circle-outline" size={18} color="#F44336" />
+            <Text style={[styles.asyncStatusText, styles.asyncErrorText]}>{error}</Text>
+          </View>
+        )}
 
-      {/* Header dengan poin utama */}
-      <View style={styles.pointsCard}>
-        <View style={styles.pointsHeader}>
-          <MaterialCommunityIcons name="leaf-circle" size={32} color="#FFFFFF" />
-          <Text style={styles.pointsTitle}>Eco Poin Saya</Text>
+        {/* Header Title */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Eco Poin</Text>
         </View>
-        <Text style={styles.pointsValue}>{userPoints.totalPoints}</Text>
-        <Text style={styles.pointsSubtitle}>Total poin yang terkumpul</Text>
 
-        {/* Level Progress */}
-        <View style={styles.levelContainer}>
-          <View style={styles.levelBadge}>
-            <MaterialCommunityIcons name={levelIcon as any} size={18} color={levelColor} />
-            <Text style={[styles.levelText, { color: levelColor }]}>{userPoints.level}</Text>
+        {/* Header dengan poin utama */}
+        <View style={styles.pointsCard}>
+          <View style={styles.pointsHeader}>
+            <Ionicons name="leaf-outline" size={28} color="#FFFFFF" />
+            <Text style={styles.pointsTitle}>Eco Poin Saya</Text>
           </View>
-          <View style={styles.progressWrapper}>
-            <CustomProgressBar progress={Math.min(progress, 1)} color={levelColor} />
-            <Text style={styles.progressText}>
-              {userPoints.totalPoints} / {userPoints.nextLevelPoints} poin menuju {userPoints.nextLevelName}
-            </Text>
-          </View>
-        </View>
-      </View>
+          <Text style={styles.pointsValue}>{userPoints.totalPoints}</Text>
+          <Text style={styles.pointsSubtitle}>Total poin yang terkumpul</Text>
 
-      {/* Statistik Dampak */}
-      <View style={styles.statsContainer}>
-        <Text style={styles.sectionTitle}>Dampak Lingkungan</Text>
-        <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <MaterialCommunityIcons name="cloud-outline" size={28} color="#06B6D4" />
-            <Text style={styles.statValue}>{userPoints.co2Saved} kg</Text>
-            <Text style={styles.statLabel}>CO₂ Terselamatkan</Text>
-          </View>
-          <View style={styles.statCard}>
-            <MaterialCommunityIcons name="recycle" size={28} color="#10B981" />
-            <Text style={styles.statValue}>{userPoints.itemsRecycled}</Text>
-            <Text style={styles.statLabel}>Item Didaur Ulang</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Cara Mendapatkan Poin */}
-      <View style={styles.tipsContainer}>
-        <Text style={styles.sectionTitle}>Cara Mendapatkan Poin</Text>
-        <View style={styles.tipsList}>
-          <View style={styles.tipItem}>
-            <View style={styles.tipIcon}>
-              <Ionicons name="scan-outline" size={20} color="#10B981" />
+          {/* Level Progress */}
+          <View style={styles.levelContainer}>
+            <View style={styles.levelBadge}>
+              <Ionicons name={levelIcon as any} size={18} color={levelColor} />
+              <Text style={[styles.levelText, { color: levelColor }]}>{userPoints.level}</Text>
             </View>
-            <View style={styles.tipContent}>
-              <Text style={styles.tipTitle}>Scan Sampah</Text>
-              <Text style={styles.tipDesc}>Scan sampah organik +5 poin, anorganik +10 poin, B3 +25 poin</Text>
-            </View>
-          </View>
-          <View style={styles.tipItem}>
-            <View style={styles.tipIcon}>
-              <Ionicons name="share-social-outline" size={20} color="#10B981" />
-            </View>
-            <View style={styles.tipContent}>
-              <Text style={styles.tipTitle}>Bagikan ke Teman</Text>
-              <Text style={styles.tipDesc}>Ajak teman bergabung dapat +50 poin</Text>
-            </View>
-          </View>
-          <View style={styles.tipItem}>
-            <View style={styles.tipIcon}>
-              <Ionicons name="calendar-outline" size={20} color="#10B981" />
-            </View>
-            <View style={styles.tipContent}>
-              <Text style={styles.tipTitle}>Challenge Harian</Text>
-              <Text style={styles.tipDesc}>Selesaikan misi harian dapat +20 poin</Text>
+            <View style={styles.progressWrapper}>
+              <CustomProgressBar progress={Math.min(progress, 1)} color={levelColor} />
+              <Text style={styles.progressText}>
+                {userPoints.totalPoints} / {userPoints.nextLevelPoints} poin menuju {userPoints.nextLevelName}
+              </Text>
             </View>
           </View>
         </View>
-      </View>
 
-      {/* Tukar Poin */}
-      <View style={styles.rewardsContainer}>
-        <Text style={styles.sectionTitle}>Tukar Poin</Text>
-        <Text style={styles.rewardsSubtitle}>
-          Tukarkan poinmu dengan reward menarik!
-        </Text>
-        {rewards.map((reward) => (
-          <RewardCard
-            key={reward.id}
-            reward={reward}
-            isRedeeming={redeemingId === reward.id}
-            onPress={() => handleRedeem(reward.id, reward.points)}
-          />
-        ))}
-      </View>
+        {/* Statistik Dampak */}
+        <View style={styles.statsSection}>
+          <Text style={styles.sectionTitle}>Dampak Lingkungan</Text>
+          <View style={styles.statsRow}>
+            <View style={styles.statCard}>
+              <Ionicons name="cloud-outline" size={26} color="#2196F3" />
+              <Text style={styles.statValue}>{userPoints.co2Saved} kg</Text>
+              <Text style={styles.statLabel}>CO₂ Dicegah</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Ionicons name="leaf-outline" size={26} color="#4CAF50" />
+              <Text style={styles.statValue}>{userPoints.itemsRecycled}</Text>
+              <Text style={styles.statLabel}>Didaur Ulang</Text>
+            </View>
+          </View>
+        </View>
 
-      {/* Tips Tambahan */}
-      <View style={styles.footerTip}>
-        <Ionicons name="bulb-outline" size={20} color="#F59E0B" />
-        <Text style={styles.footerTipText}>
-          Scan lebih banyak sampah untuk mengumpulkan poin dan naik level!
-        </Text>
-      </View>
-    </ScrollView>
+        {/* Cara Mendapatkan Poin */}
+        <View style={styles.tipsSection}>
+          <Text style={styles.sectionTitle}>Cara Mendapatkan Poin</Text>
+          <View style={styles.tipsList}>
+            <View style={styles.tipItem}>
+              <View style={styles.tipIcon}>
+                <Ionicons name="scan-outline" size={20} color="#4CAF50" />
+              </View>
+              <View style={styles.tipContent}>
+                <Text style={styles.tipTitle}>Scan Sampah</Text>
+                <Text style={styles.tipDesc}>Sampah organik +5 poin, anorganik +10 poin, B3 +25 poin</Text>
+              </View>
+            </View>
+            <View style={styles.tipItem}>
+              <View style={styles.tipIcon}>
+                <Ionicons name="share-social-outline" size={20} color="#4CAF50" />
+              </View>
+              <View style={styles.tipContent}>
+                <Text style={styles.tipTitle}>Bagikan ke Teman</Text>
+                <Text style={styles.tipDesc}>Ajak teman bergabung dapat +50 poin</Text>
+              </View>
+            </View>
+            <View style={[styles.tipItem, styles.noBorder]}>
+              <View style={styles.tipIcon}>
+                <Ionicons name="calendar-outline" size={20} color="#4CAF50" />
+              </View>
+              <View style={styles.tipContent}>
+                <Text style={styles.tipTitle}>Challenge Harian</Text>
+                <Text style={styles.tipDesc}>Selesaikan misi harian dapat +20 poin</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Tukar Poin */}
+        <View style={styles.rewardsSection}>
+          <Text style={styles.sectionTitle}>Tukar Poin</Text>
+          <Text style={styles.rewardsSubtitle}>
+            Tukarkan poinmu dengan reward menarik!
+          </Text>
+          {rewards.map((reward) => (
+            <RewardCard
+              key={reward.id}
+              reward={reward}
+              isRedeeming={redeemingId === reward.id}
+              onPress={() => handleRedeem(reward.id, reward.points)}
+            />
+          ))}
+        </View>
+
+        {/* Tips Tambahan */}
+        <View style={styles.footerTip}>
+          <Ionicons name="bulb-outline" size={20} color="#1E4E2C" />
+          <Text style={styles.footerTipText}>
+            Scan lebih banyak sampah untuk mengumpulkan poin dan naik level!
+          </Text>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#F4FAF6',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+  },
+  scrollContainer: {
+    paddingBottom: 110,
+  },
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#133B1C',
+    fontFamily: 'GeistSans-Bold',
   },
   asyncStatus: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ECFDF5',
-    marginHorizontal: 16,
-    marginTop: 16,
+    backgroundColor: 'rgba(76, 175, 80, 0.08)',
+    marginHorizontal: 20,
+    marginTop: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#A7F3D0',
+    borderColor: '#EAF2EC',
     gap: 10,
   },
   asyncStatusText: {
     flex: 1,
-    color: '#047857',
+    color: '#1E4E2C',
     fontSize: 13,
     fontFamily: 'GeistSans-Medium',
   },
@@ -267,28 +294,28 @@ const styles = StyleSheet.create({
     borderColor: '#FECACA',
   },
   asyncErrorText: {
-    color: '#B91C1C',
+    color: '#F44336',
   },
   pointsCard: {
-    backgroundColor: '#10B981',
-    marginHorizontal: 16,
-    marginTop: 16,
+    backgroundColor: '#1E4E2C',
+    marginHorizontal: 20,
+    marginTop: 12,
     marginBottom: 8,
-    padding: 20,
+    padding: 22,
     borderRadius: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
+    shadowColor: '#1E4E2C',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
     elevation: 4,
   },
   pointsHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   pointsTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: '#FFFFFF',
     marginLeft: 8,
@@ -298,18 +325,18 @@ const styles = StyleSheet.create({
     fontSize: 48,
     fontWeight: '900',
     color: '#FFFFFF',
-    marginBottom: 8,
+    marginBottom: 6,
     fontFamily: 'GeistSans-ExtraBold',
   },
   pointsSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: 'rgba(255,255,255,0.8)',
     marginBottom: 20,
     fontFamily: 'GeistSans-Regular',
   },
   levelContainer: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 18,
     padding: 12,
   },
   levelBadge: {
@@ -328,7 +355,7 @@ const styles = StyleSheet.create({
   },
   progressBarContainer: {
     height: 6,
-    backgroundColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: 'rgba(255,255,255,0.25)',
     borderRadius: 3,
     overflow: 'hidden',
   },
@@ -341,14 +368,14 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.9)',
     fontFamily: 'GeistSans-Regular',
   },
-  statsContainer: {
-    marginHorizontal: 16,
+  statsSection: {
+    marginHorizontal: 20,
     marginTop: 16,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#0F172A',
+    fontWeight: '800',
+    color: '#1C1C1C',
     marginBottom: 12,
     fontFamily: 'GeistSans-Bold',
   },
@@ -359,32 +386,32 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 18,
     padding: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#EAF2EC',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.02,
+    shadowRadius: 10,
+    elevation: 1.5,
   },
   statValue: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#0F172A',
+    color: '#1C1C1C',
     marginTop: 8,
     marginBottom: 4,
-    fontFamily: 'GeistSans-ExtraBold',
+    fontFamily: 'GeistSans-Bold',
   },
   statLabel: {
     fontSize: 12,
-    color: '#64748B',
+    color: '#757575',
     fontFamily: 'GeistSans-Medium',
   },
-  tipsContainer: {
-    marginHorizontal: 16,
+  tipsSection: {
+    marginHorizontal: 20,
     marginTop: 20,
   },
   tipsList: {
@@ -392,20 +419,23 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 8,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#EAF2EC',
   },
   tipItem: {
     flexDirection: 'row',
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: '#F5F5F5',
+  },
+  noBorder: {
+    borderBottomWidth: 0,
   },
   tipIcon: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    backgroundColor: 'rgba(76, 175, 80, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -415,23 +445,24 @@ const styles = StyleSheet.create({
   },
   tipTitle: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#0F172A',
+    fontWeight: '700',
+    color: '#1C1C1C',
     marginBottom: 2,
-    fontFamily: 'GeistSans-SemiBold',
+    fontFamily: 'GeistSans-Bold',
   },
   tipDesc: {
     fontSize: 13,
-    color: '#64748B',
+    color: '#757575',
+    lineHeight: 18,
     fontFamily: 'GeistSans-Regular',
   },
-  rewardsContainer: {
-    marginHorizontal: 16,
+  rewardsSection: {
+    marginHorizontal: 20,
     marginTop: 20,
   },
   rewardsSubtitle: {
     fontSize: 13,
-    color: '#64748B',
+    color: '#757575',
     marginBottom: 12,
     fontFamily: 'GeistSans-Regular',
   },
@@ -439,44 +470,49 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 18,
     padding: 14,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#EAF2EC',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.02,
+    shadowRadius: 10,
+    elevation: 1,
   },
   rewardCardDisabled: {
-    opacity: 0.6,
+    opacity: 0.5,
   },
   rewardIconContainer: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
   },
   rewardIconActive: {
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    backgroundColor: 'rgba(76, 175, 80, 0.08)',
   },
   rewardIconDisabled: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#F5F5F5',
   },
   rewardContent: {
     flex: 1,
   },
   rewardName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#0F172A',
-    fontFamily: 'GeistSans-SemiBold',
+    fontWeight: '700',
+    color: '#1C1C1C',
+    fontFamily: 'GeistSans-Bold',
   },
   rewardNameDisabled: {
     color: '#94A3B8',
   },
   rewardDescription: {
-    fontSize: 13,
-    color: '#64748B',
+    fontSize: 12,
+    color: '#757575',
     marginTop: 2,
     fontFamily: 'GeistSans-Regular',
   },
@@ -487,35 +523,42 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
   },
-  rewardPoints: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#10B981',
-    fontFamily: 'GeistSans-Bold',
+  rewardPointsActive: {
+    backgroundColor: 'rgba(76, 175, 80, 0.08)',
   },
   rewardPointsDisabled: {
+    backgroundColor: '#F5F5F5',
+  },
+  rewardPoints: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#4CAF50',
+    fontFamily: 'GeistSans-Bold',
+  },
+  rewardPointsTextDisabled: {
     color: '#94A3B8',
   },
   footerTip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF3C7',
-    marginHorizontal: 16,
+    backgroundColor: 'rgba(76, 175, 80, 0.08)',
+    marginHorizontal: 20,
     marginTop: 20,
     marginBottom: 40,
     padding: 14,
-    borderRadius: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#EAF2EC',
     gap: 10,
   },
   footerTipText: {
     flex: 1,
     fontSize: 13,
-    color: '#92400E',
+    color: '#1E4E2C',
     fontFamily: 'GeistSans-Regular',
   },
 });

@@ -7,10 +7,12 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 
-// Data Dummy (nanti diganti dengan fetch API dari backend)
+// Data Dummy
 const DUMMY_HISTORY = [
   {
     id: '1',
@@ -67,13 +69,13 @@ const DUMMY_HISTORY = [
 const getCategoryColor = (category: string) => {
   switch (category) {
     case 'Organik':
-      return '#10B981'; // hijau
+      return '#4CAF50';
     case 'Anorganik':
-      return '#3B82F6'; // biru
+      return '#2196F3';
     case 'B3':
-      return '#EF4444'; // merah
+      return '#F44336';
     default:
-      return '#6B7280';
+      return '#757575';
   }
 };
 
@@ -81,11 +83,11 @@ const getCategoryColor = (category: string) => {
 const getCategoryIcon = (category: string) => {
   switch (category) {
     case 'Organik':
-      return 'leaf';
+      return 'leaf-outline';
     case 'Anorganik':
-      return 'recycle';
+      return 'trash-outline';
     case 'B3':
-      return 'skull-outline';
+      return 'warning-outline';
     default:
       return 'trash-outline';
   }
@@ -115,8 +117,8 @@ const HistoryItem = ({ item }: { item: typeof DUMMY_HISTORY[0] }) => {
 
   return (
     <View style={styles.historyCard}>
-      <View style={[styles.categoryBadge, { backgroundColor: categoryColor + '15' }]}>
-        <MaterialCommunityIcons name={categoryIcon as any} size={24} color={categoryColor} />
+      <View style={[styles.categoryBadge, { backgroundColor: categoryColor + '10' }]}>
+        <Ionicons name={categoryIcon as any} size={24} color={categoryColor} />
       </View>
       
       <View style={styles.cardContent}>
@@ -127,11 +129,11 @@ const HistoryItem = ({ item }: { item: typeof DUMMY_HISTORY[0] }) => {
         
         <View style={styles.cardDetails}>
           <View style={styles.detailItem}>
-            <Ionicons name="pricetag-outline" size={14} color="#94A3B8" />
+            <Ionicons name="pricetag-outline" size={14} color="#757575" />
             <Text style={styles.detailText}>{item.category}</Text>
           </View>
           <View style={styles.detailItem}>
-            <Ionicons name="time-outline" size={14} color="#94A3B8" />
+            <Ionicons name="time-outline" size={14} color="#757575" />
             <Text style={styles.detailText}>{formatDate(item.date)}</Text>
           </View>
         </View>
@@ -146,7 +148,7 @@ const HistoryItem = ({ item }: { item: typeof DUMMY_HISTORY[0] }) => {
 const EmptyState = () => (
   <View style={styles.emptyContainer}>
     <View style={styles.emptyIconContainer}>
-      <MaterialCommunityIcons name="recycle-variant" size={64} color="#CBD5E1" />
+      <Ionicons name="trash-outline" size={54} color="#CBD5E1" />
     </View>
     <Text style={styles.emptyTitle}>Belum Ada Riwayat</Text>
     <Text style={styles.emptySubtitle}>
@@ -156,36 +158,12 @@ const EmptyState = () => (
 );
 
 export default function HistoryScreen() {
-  const [history, setHistory] = useState(DUMMY_HISTORY);
-  const [loading, setLoading] = useState(false);
+  const [history] = useState(DUMMY_HISTORY);
+  const [loading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-
-  // TODO: Nanti ganti dengan fetch API dari backend
-  // const { token } = useAuth();
-  // const [loading, setLoading] = useState(true);
-  //
-  // useEffect(() => {
-  //   fetchHistory();
-  // }, []);
-  //
-  // const fetchHistory = async () => {
-  //   try {
-  //     setLoading(true);
-  //     const response = await fetch(`${API_URL}/history`, {
-  //       headers: { Authorization: `Bearer ${token}` },
-  //     });
-  //     const data = await response.json();
-  //     if (response.ok) setHistory(data.history);
-  //   } catch (error) {
-  //     console.error(error);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
   const onRefresh = async () => {
     setRefreshing(true);
-    // TODO: Nanti ganti dengan fetch ulang data
     await new Promise(resolve => setTimeout(resolve, 1000));
     setRefreshing(false);
   };
@@ -193,87 +171,91 @@ export default function HistoryScreen() {
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#10B981" />
+        <ActivityIndicator size="large" color="#1E4E2C" />
         <Text style={styles.loadingText}>Memuat riwayat...</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Riwayat Scan</Text>
-        <Text style={styles.headerSubtitle}>
-          {history.length} item terdeteksi
-        </Text>
-      </View>
-
-      {/* Statistik Ringkas */}
-      <View style={styles.statsContainer}>
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>
-            {history.reduce((sum, item) => sum + item.points, 0)}
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F4FAF6" />
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Riwayat Scan</Text>
+          <Text style={styles.headerSubtitle}>
+            {history.length} item terdeteksi
           </Text>
-          <Text style={styles.statLabel}>Total Poin</Text>
         </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>{history.length}</Text>
-          <Text style={styles.statLabel}>Total Scan</Text>
-        </View>
-      </View>
 
-      {/* List History */}
-      <FlatList
-        data={history}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <HistoryItem item={item} />}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={['#10B981']}
-            tintColor="#10B981"
-          />
-        }
-        ListEmptyComponent={EmptyState}
-      />
-    </View>
+        {/* Statistik Ringkas */}
+        <View style={styles.statsContainer}>
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>
+              {history.reduce((sum, item) => sum + item.points, 0)}
+            </Text>
+            <Text style={styles.statLabel}>Total Poin</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statNumber}>{history.length}</Text>
+            <Text style={styles.statLabel}>Total Scan</Text>
+          </View>
+        </View>
+
+        {/* List History */}
+        <FlatList
+          data={history}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <HistoryItem item={item} />}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={['#1E4E2C']}
+              tintColor="#1E4E2C"
+            />
+          }
+          ListEmptyComponent={EmptyState}
+        />
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#F4FAF6',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F4FAF6',
   },
   loadingText: {
     marginTop: 12,
     fontSize: 14,
     color: '#64748B',
+    fontFamily: 'GeistSans-Medium',
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 16,
     paddingBottom: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '800',
-    color: '#0F172A',
-    fontFamily: 'GeistSans-ExtraBold',
+    color: '#133B1C',
+    fontFamily: 'GeistSans-Bold',
   },
   headerSubtitle: {
     fontSize: 14,
@@ -284,18 +266,18 @@ const styles = StyleSheet.create({
   statsContainer: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 8,
+    marginHorizontal: 20,
+    marginTop: 8,
+    marginBottom: 16,
     paddingVertical: 16,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#EAF2EC',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.02,
+    shadowRadius: 10,
+    elevation: 1.5,
   },
   statItem: {
     flex: 1,
@@ -304,8 +286,8 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#10B981',
-    fontFamily: 'GeistSans-ExtraBold',
+    color: '#1E4E2C',
+    fontFamily: 'GeistSans-Bold',
   },
   statLabel: {
     fontSize: 12,
@@ -315,32 +297,32 @@ const styles = StyleSheet.create({
   },
   statDivider: {
     width: 1,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: '#EAF2EC',
   },
   listContent: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 100,
+    paddingHorizontal: 20,
+    paddingTop: 4,
+    paddingBottom: 110,
   },
   historyCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 18,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#EAF2EC',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.02,
+    shadowRadius: 10,
     elevation: 1,
   },
   categoryBadge: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -352,12 +334,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   wasteType: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#0F172A',
+    color: '#1C1C1C',
     fontFamily: 'GeistSans-Bold',
   },
   points: {
@@ -376,7 +358,7 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 12,
-    color: '#64748B',
+    color: '#757575',
     fontFamily: 'GeistSans-Regular',
   },
   emptyContainer: {
@@ -386,10 +368,10 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   emptyIconContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#F1F5F9',
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: '#E8F5E9',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
@@ -397,13 +379,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#0F172A',
+    color: '#1C1C1C',
     marginBottom: 8,
     fontFamily: 'GeistSans-Bold',
   },
   emptySubtitle: {
     fontSize: 14,
-    color: '#64748B',
+    color: '#757575',
     textAlign: 'center',
     paddingHorizontal: 40,
     fontFamily: 'GeistSans-Regular',
