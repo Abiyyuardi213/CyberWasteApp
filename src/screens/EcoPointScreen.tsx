@@ -1,67 +1,17 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import {
   StyleSheet,
   Text,
   View,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
   ProgressBarAndroid,
   Platform,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-
-// Data Dummy (nanti diganti dengan fetch API)
-const DUMMY_USER_POINTS = {
-  totalPoints: 78,
-  level: 'Bronze',
-  nextLevelPoints: 100,
-  nextLevelName: 'Silver',
-  co2Saved: 4.8,
-  itemsRecycled: 7,
-};
-
-const DUMMY_REWARDS = [
-  {
-    id: 1,
-    name: 'Voucher Belanja',
-    description: 'Voucher Rp10.000',
-    points: 50,
-    icon: 'cart-outline',
-    available: true,
-  },
-  {
-    id: 2,
-    name: 'Pulsa Listrik',
-    description: 'Pulsa Rp20.000',
-    points: 100,
-    icon: 'flash-outline',
-    available: true,
-  },
-  {
-    id: 3,
-    name: 'Bibit Tanaman',
-    description: 'Paket 3 bibit pohon',
-    points: 150,
-    icon: 'leaf-outline',
-    available: true,
-  },
-  {
-    id: 4,
-    name: 'E-Tumbler',
-    description: 'Tumbler stainless steel',
-    points: 300,
-    icon: 'cup-outline',
-    available: false,
-  },
-  {
-    id: 5,
-    name: 'Voucher Makanan',
-    description: 'Voucher Rp50.000',
-    points: 500,
-    icon: 'restaurant-outline',
-    available: false,
-  },
-];
+import { fetchEcoPointData, finishRedeem, Reward, startRedeem } from '../store/ecoPointSlice';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
 
 // Level badge color
 const getLevelColor = (level: string) => {
@@ -113,11 +63,19 @@ const CustomProgressBar = ({ progress, color }: { progress: number; color: strin
 };
 
 // Reward Card Component
-const RewardCard = ({ reward, onPress }: { reward: typeof DUMMY_REWARDS[0]; onPress: () => void }) => (
+const RewardCard = ({
+  reward,
+  isRedeeming,
+  onPress,
+}: {
+  reward: Reward;
+  isRedeeming: boolean;
+  onPress: () => void;
+}) => (
   <TouchableOpacity
     style={[styles.rewardCard, !reward.available && styles.rewardCardDisabled]}
     onPress={onPress}
-    disabled={!reward.available}
+    disabled={!reward.available || isRedeeming}
     activeOpacity={0.7}
   >
     <View style={[styles.rewardIconContainer, reward.available ? styles.rewardIconActive : styles.rewardIconDisabled]}>
@@ -127,17 +85,24 @@ const RewardCard = ({ reward, onPress }: { reward: typeof DUMMY_REWARDS[0]; onPr
       <Text style={[styles.rewardName, !reward.available && styles.rewardNameDisabled]}>{reward.name}</Text>
       <Text style={[styles.rewardDescription, !reward.available && styles.rewardDescriptionDisabled]}>{reward.description}</Text>
     </View>
-    <View style={styles.rewardPointsContainer}>
-      <Text style={[styles.rewardPoints, !reward.available && styles.rewardPointsDisabled]}>{reward.points}</Text>
-      <MaterialCommunityIcons name="leaf" size={14} color={reward.available ? '#10B981' : '#94A3B8'} />
-    </View>
+    {isRedeeming ? (
+      <ActivityIndicator color="#10B981" />
+    ) : (
+      <View style={styles.rewardPointsContainer}>
+        <Text style={[styles.rewardPoints, !reward.available && styles.rewardPointsDisabled]}>{reward.points}</Text>
+        <MaterialCommunityIcons name="leaf" size={14} color={reward.available ? '#10B981' : '#94A3B8'} />
+      </View>
+    )}
   </TouchableOpacity>
 );
 
 export default function EcoPointScreen() {
-  const [userPoints, setUserPoints] = useState(DUMMY_USER_POINTS);
-  const [rewards] = useState(DUMMY_REWARDS);
-  const [redeemingId, setRedeemingId] = useState<number | null>(null);
+  const dispatch = useAppDispatch();
+  const { userPoints, rewards, redeemingId, loading, error } = useAppSelector((state) => state.ecoPoint);
+
+  useEffect(() => {
+    dispatch(fetchEcoPointData());
+  }, [dispatch]);
 
   const progress = userPoints.totalPoints / userPoints.nextLevelPoints;
   const levelColor = getLevelColor(userPoints.level);
@@ -145,13 +110,9 @@ export default function EcoPointScreen() {
 
   const handleRedeem = (rewardId: number, points: number) => {
     if (userPoints.totalPoints >= points) {
-      setRedeemingId(rewardId);
+      dispatch(startRedeem(rewardId));
       setTimeout(() => {
-        setUserPoints(prev => ({
-          ...prev,
-          totalPoints: prev.totalPoints - points,
-        }));
-        setRedeemingId(null);
+        dispatch(finishRedeem(points));
         alert('Selamat! Reward berhasil ditukarkan.');
       }, 1000);
     } else {
@@ -161,6 +122,20 @@ export default function EcoPointScreen() {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {loading && (
+        <View style={styles.asyncStatus}>
+          <ActivityIndicator color="#10B981" />
+          <Text style={styles.asyncStatusText}>Memuat data Eco Poin...</Text>
+        </View>
+      )}
+
+      {error && (
+        <View style={[styles.asyncStatus, styles.asyncError]}>
+          <Ionicons name="alert-circle-outline" size={18} color="#EF4444" />
+          <Text style={[styles.asyncStatusText, styles.asyncErrorText]}>{error}</Text>
+        </View>
+      )}
+
       {/* Header dengan poin utama */}
       <View style={styles.pointsCard}>
         <View style={styles.pointsHeader}>
@@ -246,6 +221,7 @@ export default function EcoPointScreen() {
           <RewardCard
             key={reward.id}
             reward={reward}
+            isRedeeming={redeemingId === reward.id}
             onPress={() => handleRedeem(reward.id, reward.points)}
           />
         ))}
@@ -266,6 +242,32 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
+  },
+  asyncStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ECFDF5',
+    marginHorizontal: 16,
+    marginTop: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    gap: 10,
+  },
+  asyncStatusText: {
+    flex: 1,
+    color: '#047857',
+    fontSize: 13,
+    fontFamily: 'GeistSans-Medium',
+  },
+  asyncError: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
+  },
+  asyncErrorText: {
+    color: '#B91C1C',
   },
   pointsCard: {
     backgroundColor: '#10B981',

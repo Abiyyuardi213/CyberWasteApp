@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '../../config';
 
@@ -26,10 +26,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-
-  useEffect(() => {
-    checkSession();
-  }, []);
 
   const login = async (emailOrUsername: string, password: string) => {
     try {
@@ -120,7 +116,7 @@ const logout = async () => {
   }
 };
 
-  const checkSession = async () => {
+  const checkSession = useCallback(async () => {
     try {
       setIsLoading(true);
       const storedToken = await AsyncStorage.getItem('token');
@@ -165,7 +161,11 @@ const logout = async () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    checkSession();
+  }, [checkSession]);
 
   return (
     <AuthContext.Provider

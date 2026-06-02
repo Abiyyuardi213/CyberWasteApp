@@ -11,31 +11,42 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../context/AuthContext';
 
 interface LoginScreenProps {
-  loginInput: string;
-  setLoginInput: (value: string) => void;
-  password: string;
-  setPassword: (value: string) => void;
-  passwordVisible: boolean;
-  setPasswordVisible: (value: boolean) => void;
-  handleLogin: () => void;
-  loading: boolean;
-  transitionTo: (nextScreen: 'onboarding' | 'login' | 'register' | 'welcome') => void;
+  showToast: (message: string, type?: 'success' | 'error') => void;
 }
 
 export default function LoginScreen({
-  loginInput,
-  setLoginInput,
-  password,
-  setPassword,
-  passwordVisible,
-  setPasswordVisible,
-  handleLogin,
-  loading,
-  transitionTo,
+  showToast,
 }: LoginScreenProps) {
+  const navigation = useNavigation<any>();
+  const { login } = useAuth();
   const [focusedInput, setFocusedInput] = useState<'loginInput' | 'password' | null>(null);
+  const [loginInput, setLoginInput] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [passwordVisible, setPasswordVisible] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const handleLogin = async () => {
+    if (!loginInput || !password) {
+      showToast('Harap isi email/username dan password!', 'error');
+      return;
+    }
+
+    setLoading(true);
+    const result = await login(loginInput, password);
+    setLoading(false);
+
+    if (result.success) {
+      setLoginInput('');
+      setPassword('');
+      showToast('Selamat datang kembali!', 'success');
+    } else {
+      showToast(result.error || 'Login gagal. Cek kembali akun Anda.', 'error');
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -139,7 +150,7 @@ export default function LoginScreen({
         {/* Footer Switch */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>Belum memiliki akun?</Text>
-          <TouchableOpacity onPress={() => transitionTo('register')}>
+          <TouchableOpacity onPress={() => navigation.navigate('Register')}>
             <Text style={styles.footerLink}>Daftar Sekarang</Text>
           </TouchableOpacity>
         </View>

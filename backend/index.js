@@ -177,6 +177,63 @@ app.get('/api/auth/me', async (req, res) => {
   }
 });
 
+// Route: Get Eco Point data
+app.get('/api/eco-points', (req, res) => {
+  res.json({
+    success: true,
+    userPoints: {
+      totalPoints: 78,
+      level: 'Bronze',
+      nextLevelPoints: 100,
+      nextLevelName: 'Silver',
+      co2Saved: 4.8,
+      itemsRecycled: 7,
+    },
+    rewards: [
+      {
+        id: 1,
+        name: 'Voucher Belanja',
+        description: 'Voucher Rp10.000',
+        points: 50,
+        icon: 'cart-outline',
+        available: true,
+      },
+      {
+        id: 2,
+        name: 'Pulsa Listrik',
+        description: 'Pulsa Rp20.000',
+        points: 100,
+        icon: 'flash-outline',
+        available: true,
+      },
+      {
+        id: 3,
+        name: 'Bibit Tanaman',
+        description: 'Paket 3 bibit pohon',
+        points: 150,
+        icon: 'leaf-outline',
+        available: true,
+      },
+      {
+        id: 4,
+        name: 'E-Tumbler',
+        description: 'Tumbler stainless steel',
+        points: 300,
+        icon: 'cup-outline',
+        available: false,
+      },
+      {
+        id: 5,
+        name: 'Voucher Makanan',
+        description: 'Voucher Rp50.000',
+        points: 500,
+        icon: 'restaurant-outline',
+        available: false,
+      },
+    ],
+  });
+});
+
 // Start Server
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);

@@ -11,37 +11,56 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../context/AuthContext';
 
 interface RegisterScreenProps {
-  username: string;
-  setUsername: (value: string) => void;
-  email: string;
-  setEmail: (value: string) => void;
-  password: string;
-  setPassword: (value: string) => void;
-  confirmPassword: string;
-  setConfirmPassword: (value: string) => void;
-  handleRegister: () => void;
-  loading: boolean;
-  transitionTo: (nextScreen: 'onboarding' | 'login' | 'register' | 'welcome') => void;
+  showToast: (message: string, type?: 'success' | 'error') => void;
 }
 
 type FieldType = 'username' | 'email' | 'password' | 'confirmPassword';
 
 export default function RegisterScreen({
-  username,
-  setUsername,
-  email,
-  setEmail,
-  password,
-  setPassword,
-  confirmPassword,
-  setConfirmPassword,
-  handleRegister,
-  loading,
-  transitionTo,
+  showToast,
 }: RegisterScreenProps) {
+  const navigation = useNavigation<any>();
+  const { register } = useAuth();
   const [focusedInput, setFocusedInput] = useState<FieldType | null>(null);
+  const [username, setUsername] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [confirmPassword, setConfirmPassword] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const handleRegister = async () => {
+    if (!username || !email || !password || !confirmPassword) {
+      showToast('Harap lengkapi semua kolom input!', 'error');
+      return;
+    }
+    if (password !== confirmPassword) {
+      showToast('Password dan konfirmasi password tidak cocok!', 'error');
+      return;
+    }
+    if (password.length < 6) {
+      showToast('Password minimal harus 6 karakter!', 'error');
+      return;
+    }
+
+    setLoading(true);
+    const result = await register(username, email, password);
+    setLoading(false);
+
+    if (result.success) {
+      showToast('Registrasi berhasil! Silakan masuk.', 'success');
+      setUsername('');
+      setEmail('');
+      setPassword('');
+      setConfirmPassword('');
+      navigation.navigate('Login');
+    } else {
+      showToast(result.error || 'Registrasi gagal. Coba lagi.', 'error');
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -185,7 +204,7 @@ export default function RegisterScreen({
         {/* Footer Switch */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>Sudah memiliki akun?</Text>
-          <TouchableOpacity onPress={() => transitionTo('login')}>
+          <TouchableOpacity onPress={() => navigation.navigate('Login')}>
             <Text style={styles.footerLink}>Masuk Akun</Text>
           </TouchableOpacity>
         </View>

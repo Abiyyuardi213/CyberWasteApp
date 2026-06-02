@@ -7,6 +7,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 
 interface Slide {
   title: string;
@@ -37,18 +38,15 @@ const SLIDES: Slide[] = [
   },
 ];
 
-interface OnboardingScreenProps {
-  transitionTo: (nextScreen: 'onboarding' | 'login' | 'register' | 'welcome') => void;
-}
-
-export default function OnboardingScreen({ transitionTo }: OnboardingScreenProps) {
+export default function OnboardingScreen() {
+  const navigation = useNavigation<any>();
   const [currentSlide, setCurrentSlide] = useState(0);
 
   return (
     <View style={styles.onboardingContainer}>
       {/* Top Area: Skip Button */}
       <View style={styles.onboardingHeader}>
-        <TouchableOpacity onPress={() => transitionTo('login')} style={styles.skipBtn}>
+        <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.skipBtn}>
           <Text style={styles.skipBtnText}>Lewati</Text>
         </TouchableOpacity>
       </View>
@@ -87,7 +85,7 @@ export default function OnboardingScreen({ transitionTo }: OnboardingScreenProps
             if (currentSlide < SLIDES.length - 1) {
               setCurrentSlide(currentSlide + 1);
             } else {
-              transitionTo('login');
+              navigation.navigate('Login');
             }
           }}
         >
