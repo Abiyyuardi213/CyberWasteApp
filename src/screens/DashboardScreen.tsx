@@ -4,23 +4,14 @@ import {
   Text,
   View,
   TouchableOpacity,
-  ActivityIndicator,
   ScrollView,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useAuth } from '../context/AuthContext';
 
-interface User {
-  username: string;
-  email: string;
-}
+export default function DashboardScreen() {
+  const { user } = useAuth();
 
-interface DashboardScreenProps {
-  user: User;
-  handleLogout: () => void;
-  loading: boolean;
-}
-
-export default function DashboardScreen({ user, handleLogout, loading }: DashboardScreenProps) {
   return (
     <ScrollView contentContainerStyle={styles.welcomeContainer}>
       {/* Header Dashboard */}
@@ -28,12 +19,12 @@ export default function DashboardScreen({ user, handleLogout, loading }: Dashboa
         <View style={styles.welcomeAvatarContainer}>
           <View style={styles.welcomeAvatar}>
             <Text style={styles.avatarLetter}>
-              {user.username ? user.username[0].toUpperCase() : 'U'}
+              {user?.username ? user.username[0].toUpperCase() : 'U'}
             </Text>
           </View>
           <View style={styles.onlineBadge} />
         </View>
-        <Text style={styles.welcomeGreeting}>Halo, {user.username}!</Text>
+        <Text style={styles.welcomeGreeting}>Halo, {user?.username || 'Pengguna'}!</Text>
         <Text style={styles.welcomeSub}>Selamat datang di Dashboard Echo Tech</Text>
       </View>
 
@@ -76,22 +67,6 @@ export default function DashboardScreen({ user, handleLogout, loading }: Dashboa
           <Text style={styles.disabledButtonText}>Aktifkan Kamera Deteksi</Text>
         </TouchableOpacity>
       </View>
-
-      {/* Log Out Button */}
-      <TouchableOpacity
-        style={styles.logoutButton}
-        onPress={handleLogout}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color="#EF4444" />
-        ) : (
-          <>
-            <Ionicons name="log-out-outline" size={20} color="#EF4444" />
-            <Text style={styles.logoutText}>Keluar Akun</Text>
-          </>
-        )}
-      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -278,23 +253,6 @@ const styles = StyleSheet.create({
     color: 'rgba(16, 185, 129, 0.6)',
     fontWeight: '700',
     fontSize: 14,
-    fontFamily: 'GeistSans-Bold',
-  },
-  logoutButton: {
-    flexDirection: 'row',
-    height: 50,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: '#FECACA',
-    backgroundColor: '#FFF5F5',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoutText: {
-    color: '#EF4444',
-    fontWeight: '700',
-    fontSize: 15,
-    marginLeft: 8,
     fontFamily: 'GeistSans-Bold',
   },
 });
