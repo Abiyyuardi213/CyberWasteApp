@@ -33,14 +33,46 @@ interface EcoPointResponse {
   rewards: Reward[];
 }
 
-const initialState: EcoPointState = {
-  userPoints: {
-    totalPoints: 78,
+const getPointLevel = (totalPoints: number) => {
+  if (totalPoints >= 700) {
+    return {
+      level: 'Platinum',
+      nextLevelPoints: totalPoints,
+      nextLevelName: 'Level maksimum',
+    };
+  }
+
+  if (totalPoints >= 300) {
+    return {
+      level: 'Gold',
+      nextLevelPoints: 700,
+      nextLevelName: 'Platinum',
+    };
+  }
+
+  if (totalPoints >= 100) {
+    return {
+      level: 'Silver',
+      nextLevelPoints: 300,
+      nextLevelName: 'Gold',
+    };
+  }
+
+  return {
     level: 'Bronze',
     nextLevelPoints: 100,
     nextLevelName: 'Silver',
-    co2Saved: 4.8,
-    itemsRecycled: 7,
+  };
+};
+
+const initialState: EcoPointState = {
+  userPoints: {
+    totalPoints: 0,
+    level: 'Bronze',
+    nextLevelPoints: 100,
+    nextLevelName: 'Silver',
+    co2Saved: 0,
+    itemsRecycled: 0,
   },
   rewards: [
     {
@@ -89,11 +121,19 @@ const initialState: EcoPointState = {
   error: null,
 };
 
-export const fetchEcoPointData = createAsyncThunk<EcoPointResponse>(
+export const fetchEcoPointData = createAsyncThunk<EcoPointResponse, string | null>(
   'ecoPoint/fetchEcoPointData',
-  async (_, thunkAPI) => {
+  async (token, thunkAPI) => {
     try {
-      const response = await fetch(`${API_URL}/eco-points`);
+      if (!token) {
+        return thunkAPI.rejectWithValue('Silakan login untuk memuat Eco Poin');
+      }
+
+      const response = await fetch(`${API_URL}/eco-points`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       const data = await response.json();
 
       if (!response.ok || !data.success) {
@@ -124,6 +164,19 @@ const ecoPointSlice = createSlice({
     addPoints: (state, action: PayloadAction<number>) => {
       state.userPoints.totalPoints += action.payload;
     },
+    addScanPoints: (state, action: PayloadAction<number>) => {
+      const totalPoints = state.userPoints.totalPoints + action.payload;
+      const itemsRecycled = state.userPoints.itemsRecycled + 1;
+      const levelInfo = getPointLevel(totalPoints);
+
+      state.userPoints = {
+        ...state.userPoints,
+        ...levelInfo,
+        totalPoints,
+        itemsRecycled,
+        co2Saved: Number((itemsRecycled * 0.68).toFixed(1)),
+      };
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -146,5 +199,5 @@ const ecoPointSlice = createSlice({
   },
 });
 
-export const { startRedeem, finishRedeem, cancelRedeem, addPoints } = ecoPointSlice.actions;
+export const { startRedeem, finishRedeem, cancelRedeem, addPoints, addScanPoints } = ecoPointSlice.actions;
 export default ecoPointSlice.reducer;

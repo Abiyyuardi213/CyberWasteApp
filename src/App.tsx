@@ -21,6 +21,7 @@ import AppNavigator from './navigation/AppNavigation';
 
 // Import AuthContext
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { LanguageProvider } from './context/LanguageContext';
 import { store } from './store/store';
 
 // Komponen utama yang berisi logika aplikasi
@@ -103,7 +104,9 @@ export default function App() {
   return (
     <Provider store={store}>
       <AuthProvider>
-        <AppContent />
+        <LanguageProvider>
+          <AppContent />
+        </LanguageProvider>
       </AuthProvider>
     </Provider>
   );

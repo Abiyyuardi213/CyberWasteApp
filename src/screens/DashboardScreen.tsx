@@ -9,18 +9,16 @@ import {
   Alert,
   StatusBar,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 
 export default function DashboardScreen() {
   const { user } = useAuth();
+  const navigation = useNavigation<any>();
 
   const handleClassificationPress = () => {
-    Alert.alert(
-      "Klasifikasi Sampah AI",
-      "Fitur pemindaian kamera AI sedang dalam pengembangan. Model klasifikasi sampah siap memproses 11 jenis sampah!",
-      [{ text: "OK" }]
-    );
+    navigation.navigate('Scan');
   };
 
   return (
@@ -390,4 +388,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: 'GeistSans-Bold',
   },
-});
+});

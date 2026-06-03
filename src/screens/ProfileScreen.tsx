@@ -1,10 +1,14 @@
 import React from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert, SafeAreaView, StatusBar } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function ProfileScreen() {
+  const navigation = useNavigation<any>();
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
 
   const stats = {
     totalScan: 24,
@@ -15,39 +19,39 @@ export default function ProfileScreen() {
   const menuItems = [
     {
       icon: 'person-outline',
-      title: 'Edit Profil',
-      subtitle: 'Ubah data diri Anda',
-      onPress: () => Alert.alert('Coming Soon', 'Fitur edit profil akan segera hadir'),
+      title: t('profile.editProfile'),
+      subtitle: t('profile.editProfileSubtitle'),
+      onPress: () => navigation.navigate('EditProfile'),
     },
     {
       icon: 'shield-checkmark-outline',
-      title: 'Ubah Password',
-      subtitle: 'Keamanan akun Anda',
-      onPress: () => Alert.alert('Coming Soon', 'Fitur ubah password akan segera hadir'),
+      title: t('profile.changePassword'),
+      subtitle: t('profile.changePasswordSubtitle'),
+      onPress: () => navigation.navigate('ChangePassword'),
     },
     {
       icon: 'notifications-outline',
-      title: 'Notifikasi',
-      subtitle: 'Atur notifikasi Anda',
-      onPress: () => Alert.alert('Coming Soon', 'Fitur notifikasi akan segera hadir'),
+      title: t('profile.notifications'),
+      subtitle: t('profile.notificationsSubtitle'),
+      onPress: () => navigation.navigate('NotificationSettings'),
     },
     {
       icon: 'language-outline',
-      title: 'Bahasa',
-      subtitle: 'Indonesia',
-      onPress: () => Alert.alert('Coming Soon', 'Fitur bahasa akan segera hadir'),
+      title: t('profile.language'),
+      subtitle: t('profile.languageSubtitle'),
+      onPress: () => navigation.navigate('LanguageSettings'),
     },
     {
       icon: 'help-circle-outline',
-      title: 'Bantuan',
-      subtitle: 'Pusat bantuan & FAQ',
-      onPress: () => Alert.alert('Coming Soon', 'Fitur bantuan akan segera hadir'),
+      title: t('profile.help'),
+      subtitle: t('profile.helpSubtitle'),
+      onPress: () => navigation.navigate('Help'),
     },
     {
       icon: 'information-circle-outline',
-      title: 'Tentang Aplikasi',
-      subtitle: 'Versi 1.0.0',
-      onPress: () => Alert.alert('Tentang Echo Tech', 'Aplikasi klasifikasi sampah berbasis AI untuk lingkungan yang lebih baik.'),
+      title: t('profile.about'),
+      subtitle: t('profile.aboutSubtitle'),
+      onPress: () => navigation.navigate('AboutApp'),
     },
   ];
 
@@ -62,7 +66,7 @@ export default function ProfileScreen() {
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContainer}>
         {/* Header Title */}
         <View style={styles.headerSection}>
-          <Text style={styles.headerTitle}>Profil Saya</Text>
+          <Text style={styles.headerTitle}>{t('profile.title')}</Text>
         </View>
 
         {/* User Card */}
@@ -75,7 +79,7 @@ export default function ProfileScreen() {
             </View>
             <View style={styles.onlineBadge} />
           </View>
-          <Text style={styles.username}>{user?.username || 'Pengguna'}</Text>
+          <Text style={styles.username}>{user?.username || t('profile.defaultUser')}</Text>
           <Text style={styles.email}>{user?.email || 'email@example.com'}</Text>
         </View>
 
@@ -86,7 +90,7 @@ export default function ProfileScreen() {
               <Ionicons name="scan-outline" size={20} color="#4CAF50" />
             </View>
             <Text style={styles.statNumber}>{stats.totalScan}</Text>
-            <Text style={styles.statLabel}>Total Scan</Text>
+            <Text style={styles.statLabel}>{t('profile.totalScan')}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statCard}>
@@ -94,7 +98,7 @@ export default function ProfileScreen() {
               <Ionicons name="leaf-outline" size={20} color="#4CAF50" />
             </View>
             <Text style={styles.statNumber}>{stats.ecoPoints}</Text>
-            <Text style={styles.statLabel}>Eco Poin</Text>
+            <Text style={styles.statLabel}>{t('profile.ecoPoints')}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statCard}>
@@ -102,13 +106,13 @@ export default function ProfileScreen() {
               <Ionicons name="rose-outline" size={20} color="#4CAF50" />
             </View>
             <Text style={styles.statNumber}>{stats.treesSaved}</Text>
-            <Text style={styles.statLabel}>Pohon</Text>
+            <Text style={styles.statLabel}>{t('profile.tree')}</Text>
           </View>
         </View>
 
         {/* Menu List */}
         <View style={styles.menuContainer}>
-          <Text style={styles.menuTitle}>Pengaturan Akun</Text>
+          <Text style={styles.menuTitle}>{t('profile.accountSettings')}</Text>
           {menuItems.map((item, index) => (
             <TouchableOpacity key={index} style={styles.menuItem} onPress={item.onPress} activeOpacity={0.7}>
               <View style={styles.menuIcon}>
@@ -126,7 +130,7 @@ export default function ProfileScreen() {
         {/* Logout Button */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.8}>
           <Ionicons name="log-out-outline" size={20} color="#EF4444" />
-          <Text style={styles.logoutText}>Keluar Akun</Text>
+          <Text style={styles.logoutText}>{t('profile.logout')}</Text>
         </TouchableOpacity>
 
         <Text style={styles.versionText}>Echo Tech v1.0.0</Text>

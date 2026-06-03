@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -10,60 +10,19 @@ import {
   SafeAreaView,
   StatusBar,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { API_URL } from '../../config';
+import { useAuth } from '../context/AuthContext';
 
-// Data Dummy
-const DUMMY_HISTORY = [
-  {
-    id: '1',
-    wasteType: 'Botol Plastik',
-    category: 'Anorganik',
-    points: 10,
-    date: '2026-06-02T10:30:00',
-  },
-  {
-    id: '2',
-    wasteType: 'Daun Kering',
-    category: 'Organik',
-    points: 5,
-    date: '2026-06-01T14:20:00',
-  },
-  {
-    id: '3',
-    wasteType: 'Botol Kaca',
-    category: 'Anorganik',
-    points: 15,
-    date: '2026-05-31T09:15:00',
-  },
-  {
-    id: '4',
-    wasteType: 'Baterai Bekas',
-    category: 'B3',
-    points: 25,
-    date: '2026-05-30T16:45:00',
-  },
-  {
-    id: '5',
-    wasteType: 'Kardus',
-    category: 'Anorganik',
-    points: 8,
-    date: '2026-05-29T11:00:00',
-  },
-  {
-    id: '6',
-    wasteType: 'Sisa Makanan',
-    category: 'Organik',
-    points: 3,
-    date: '2026-05-28T12:30:00',
-  },
-  {
-    id: '7',
-    wasteType: 'Kaleng Minuman',
-    category: 'Anorganik',
-    points: 12,
-    date: '2026-05-27T08:45:00',
-  },
-];
+interface ScanHistoryItem {
+  id: string;
+  wasteType: string;
+  category: string;
+  confidence: number;
+  points: number;
+  date: string;
+}
 
 // Warna berdasarkan kategori
 const getCategoryColor = (category: string) => {
@@ -111,7 +70,7 @@ const formatDate = (dateString: string) => {
 };
 
 // Item Card Component
-const HistoryItem = ({ item }: { item: typeof DUMMY_HISTORY[0] }) => {
+const HistoryItem = ({ item }: { item: ScanHistoryItem }) => {
   const categoryColor = getCategoryColor(item.category);
   const categoryIcon = getCategoryIcon(item.category);
 
@@ -131,6 +90,10 @@ const HistoryItem = ({ item }: { item: typeof DUMMY_HISTORY[0] }) => {
           <View style={styles.detailItem}>
             <Ionicons name="pricetag-outline" size={14} color="#757575" />
             <Text style={styles.detailText}>{item.category}</Text>
+          </View>
+          <View style={styles.detailItem}>
+            <Ionicons name="analytics-outline" size={14} color="#757575" />
+            <Text style={styles.detailText}>{Math.round(item.confidence * 100)}%</Text>
           </View>
           <View style={styles.detailItem}>
             <Ionicons name="time-outline" size={14} color="#757575" />
@@ -158,15 +121,65 @@ const EmptyState = () => (
 );
 
 export default function HistoryScreen() {
-  const [history] = useState(DUMMY_HISTORY);
-  const [loading] = useState(false);
+  const { token } = useAuth();
+  const [history, setHistory] = useState<ScanHistoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchHistory = useCallback(async (showInitialLoading = false) => {
+    if (!token) {
+      setHistory([]);
+      setError('Silakan login untuk melihat riwayat scan.');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      if (showInitialLoading) {
+        setLoading(true);
+      }
+      setError(null);
+
+      const response = await fetch(`${API_URL}/scan-history`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const responseText = await response.text();
+      const contentType = response.headers.get('content-type') || '';
+      const data = contentType.includes('application/json') && responseText
+        ? JSON.parse(responseText)
+        : null;
+
+      if (!response.ok || !data?.success) {
+        throw new Error(
+          data?.error ||
+          'Endpoint riwayat belum aktif. Restart backend, lalu buka ulang halaman History.'
+        );
+      }
+
+      setHistory(data.history || []);
+    } catch (fetchError) {
+      setError(fetchError instanceof Error ? fetchError.message : 'Gagal memuat riwayat scan');
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchHistory(true);
+    }, [fetchHistory])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await fetchHistory(false);
     setRefreshing(false);
   };
+
+  const totalPoints = history.reduce((sum, item) => sum + item.points, 0);
 
   if (loading) {
     return (
@@ -189,11 +202,18 @@ export default function HistoryScreen() {
           </Text>
         </View>
 
+        {error && (
+          <View style={styles.errorCard}>
+            <Ionicons name="alert-circle-outline" size={18} color="#F44336" />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
+
         {/* Statistik Ringkas */}
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
             <Text style={styles.statNumber}>
-              {history.reduce((sum, item) => sum + item.points, 0)}
+              {totalPoints}
             </Text>
             <Text style={styles.statLabel}>Total Poin</Text>
           </View>
@@ -279,6 +299,27 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 1.5,
   },
+  errorCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF2F2',
+    marginHorizontal: 20,
+    marginTop: 4,
+    marginBottom: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    gap: 10,
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#B91C1C',
+    lineHeight: 18,
+    fontFamily: 'GeistSans-Medium',
+  },
   statItem: {
     flex: 1,
     alignItems: 'center',
@@ -349,6 +390,7 @@ const styles = StyleSheet.create({
   },
   cardDetails: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 16,
   },
   detailItem: {

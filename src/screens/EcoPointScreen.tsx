@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -11,9 +11,11 @@ import {
   SafeAreaView,
   StatusBar,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchEcoPointData, finishRedeem, Reward, startRedeem } from '../store/ecoPointSlice';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { useAuth } from '../context/AuthContext';
 
 // Level badge color
 const getLevelColor = (level: string) => {
@@ -100,11 +102,14 @@ const RewardCard = ({
 
 export default function EcoPointScreen() {
   const dispatch = useAppDispatch();
+  const { token } = useAuth();
   const { userPoints, rewards, redeemingId, loading, error } = useAppSelector((state) => state.ecoPoint);
 
-  useEffect(() => {
-    dispatch(fetchEcoPointData());
-  }, [dispatch]);
+  useFocusEffect(
+    useCallback(() => {
+      dispatch(fetchEcoPointData(token));
+    }, [dispatch, token])
+  );
 
   const progress = userPoints.totalPoints / userPoints.nextLevelPoints;
   const levelColor = getLevelColor(userPoints.level);
