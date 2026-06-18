@@ -83,10 +83,17 @@ export default function ScanScreen() {
         },
         body: formData,
       });
-      const data = await response.json();
+      const responseText = await response.text();
+      const contentType = response.headers.get('content-type') || '';
+      const data = contentType.includes('application/json') && responseText
+        ? JSON.parse(responseText)
+        : null;
 
-      if (!response.ok || !data.success) {
-        const message = data.detail || data.error || 'Model belum bisa membaca gambar ini.';
+      if (!response.ok || !data?.success) {
+        const message =
+          data?.detail ||
+          data?.error ||
+          `Server tidak mengirim JSON valid. Status: ${response.status}. Pastikan endpoint ${API_URL}/predict-waste aktif.`;
         setScanError(message);
         Alert.alert('Prediksi gagal', message);
         return;
@@ -95,10 +102,7 @@ export default function ScanScreen() {
       setPrediction(data.prediction);
       dispatch(addScanPoints(Number(data.prediction.points || 0)));
     } catch (error) {
-      const message =
-        Platform.OS === 'android'
-          ? 'Koneksi gagal. Jika memakai HP fisik, ganti API_URL ke IP laptop. Jika emulator, pastikan backend berjalan.'
-          : 'Koneksi gagal. Pastikan backend berjalan dan model sudah selesai training.';
+      const message = `Koneksi ke API gagal. Pastikan HP terhubung internet dan backend aktif di ${API_URL}.`;
       setScanError(message);
       Alert.alert('Koneksi gagal', message);
     } finally {
