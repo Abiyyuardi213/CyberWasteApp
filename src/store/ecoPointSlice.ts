@@ -33,6 +33,17 @@ interface EcoPointResponse {
   rewards: Reward[];
 }
 
+interface RedeemRewardResponse {
+  success: boolean;
+  message: string;
+  availablePoints: number;
+}
+
+interface RedeemRewardRequest {
+  token: string | null;
+  rewardId: number;
+}
+
 const getPointLevel = (totalPoints: number) => {
   if (totalPoints >= 700) {
     return {
@@ -147,6 +158,35 @@ export const fetchEcoPointData = createAsyncThunk<EcoPointResponse, string | nul
   }
 );
 
+export const redeemReward = createAsyncThunk<RedeemRewardResponse, RedeemRewardRequest>(
+  'ecoPoint/redeemReward',
+  async ({ token, rewardId }, thunkAPI) => {
+    try {
+      if (!token) {
+        return thunkAPI.rejectWithValue('Silakan login untuk menukarkan reward');
+      }
+
+      const response = await fetch(`${API_URL}/eco-points/redeem`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ rewardId }),
+      });
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        return thunkAPI.rejectWithValue(data.error || 'Gagal menukarkan reward');
+      }
+
+      return data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue('Gagal terhubung ke server reward');
+    }
+  }
+);
+
 const ecoPointSlice = createSlice({
   name: 'ecoPoint',
   initialState,
@@ -195,6 +235,23 @@ const ecoPointSlice = createSlice({
           typeof action.payload === 'string'
             ? action.payload
             : action.error.message || 'Gagal memuat data Eco Poin';
+      })
+      .addCase(redeemReward.fulfilled, (state, action) => {
+        const levelInfo = getPointLevel(action.payload.availablePoints);
+
+        state.redeemingId = null;
+        state.userPoints = {
+          ...state.userPoints,
+          ...levelInfo,
+          totalPoints: action.payload.availablePoints,
+        };
+      })
+      .addCase(redeemReward.rejected, (state, action) => {
+        state.redeemingId = null;
+        state.error =
+          typeof action.payload === 'string'
+            ? action.payload
+            : action.error.message || 'Gagal menukarkan reward';
       });
   },
 });

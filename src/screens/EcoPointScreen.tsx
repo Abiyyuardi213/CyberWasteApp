@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { fetchEcoPointData, finishRedeem, Reward, startRedeem } from '../store/ecoPointSlice';
+import { fetchEcoPointData, redeemReward, Reward, startRedeem } from '../store/ecoPointSlice';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { useAuth } from '../context/AuthContext';
 
@@ -115,13 +115,15 @@ export default function EcoPointScreen() {
   const levelColor = getLevelColor(userPoints.level);
   const levelIcon = getLevelIcon(userPoints.level);
 
-  const handleRedeem = (rewardId: number, points: number) => {
+  const handleRedeem = async (rewardId: number, points: number) => {
     if (userPoints.totalPoints >= points) {
-      dispatch(startRedeem(rewardId));
-      setTimeout(() => {
-        dispatch(finishRedeem(points));
-        alert('Selamat! Reward berhasil ditukarkan.');
-      }, 1000);
+      try {
+        dispatch(startRedeem(rewardId));
+        const result = await dispatch(redeemReward({ token, rewardId })).unwrap();
+        alert(result.message || 'Selamat! Reward berhasil ditukarkan.');
+      } catch (redeemError) {
+        alert(typeof redeemError === 'string' ? redeemError : 'Gagal menukarkan reward.');
+      }
     } else {
       alert(`Poin tidak cukup. Butuh ${points - userPoints.totalPoints} poin lagi.`);
     }
