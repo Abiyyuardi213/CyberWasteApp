@@ -1,9 +1,11 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useAuth } from '../context/AuthContext';
 import FloatingTabBar from '../components/FloatingTabBar';
+import { StatusBar } from 'react-native';
+import { TransitionPresets } from '@react-navigation/stack';
 
 // Import screens (hanya yang dipakai di bottom tab)
 import DashboardScreen from '../screens/DashboardScreen';
@@ -28,13 +30,57 @@ interface AppNavigatorProps {
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
+// Magic UI Theme dengan Glassmorphism
+const MagicUITheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    background: '#f0fdf4',
+    card: 'rgba(255, 255, 255, 0.7)',
+    primary: '#1E4E2C',
+    text: '#133B1C',
+    border: 'rgba(255, 255, 255, 0.3)',
+  },
+};
+
+const stackScreenOptions = {
+  headerShown: false,
+  cardStyle: { 
+    backgroundColor: '#f0fdf4',
+  },
+  ...TransitionPresets.SlideFromRightIOS,
+  cardOverlayEnabled: true,
+  cardStyleInterpolator: ({ current: { progress } }: any) => ({
+    cardStyle: {
+      opacity: progress,
+      transform: [
+        {
+          scale: progress.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0.95, 1],
+          }),
+        },
+      ],
+    },
+    overlayStyle: {
+      opacity: progress.interpolate({
+        inputRange: [0, 1],
+        outputRange: [0, 0.3],
+      }),
+    },
+  }),
+};
+
+// Konfigurasi Linking yang diperbaiki
 const linking = {
-  prefixes: ['http://localhost:8081'],
+  prefixes: ['http://localhost:8081', 'cyberwaste://'],
   config: {
     screens: {
-      Onboarding: '',
+      // Auth Screens
+      Onboarding: 'onboarding',
       Login: 'login',
       Register: 'register',
+      // Main Tabs
       MainTabs: {
         path: '',
         screens: {
@@ -45,6 +91,7 @@ const linking = {
           Profil: 'profile',
         },
       },
+      // Profile Settings
       EditProfile: 'profile/edit',
       ChangePassword: 'profile/password',
       NotificationSettings: 'profile/notifications',
@@ -61,13 +108,49 @@ function MainTabs() {
       tabBar={(props) => <FloatingTabBar {...props} />}
       screenOptions={{
         headerShown: false,
+        tabBarStyle: {
+          backgroundColor: 'transparent',
+          borderTopWidth: 0,
+          elevation: 0,
+          shadowOpacity: 0,
+        },
       }}
     >
-      <Tab.Screen name="Dashboard" component={DashboardScreen} />
-      <Tab.Screen name="Scan" component={ScanScreen} />
-      <Tab.Screen name="History" component={HistoryScreen} />
-      <Tab.Screen name="Eco Poin" component={EcoPointScreen} />
-      <Tab.Screen name="Profil" component={ProfileScreen} />
+      <Tab.Screen 
+        name="Dashboard" 
+        component={DashboardScreen}
+        options={{
+          tabBarLabel: 'Dashboard',
+        }}
+      />
+      <Tab.Screen 
+        name="Scan" 
+        component={ScanScreen}
+        options={{
+          tabBarLabel: 'Scan',
+        }}
+      />
+      <Tab.Screen 
+        name="History" 
+        component={HistoryScreen}
+        options={{
+          tabBarLabel: 'History',
+        }}
+      />
+      <Tab.Screen 
+        name="Eco Poin" 
+        component={EcoPointScreen}
+        options={{
+          tabBarLabel: 'Eco Poin',
+        }}
+      />
+      <Tab.Screen 
+        name="Profil" 
+        component={ProfileScreen}
+        options={{
+          tabBarLabel: 'Profil',
+        }}
+      />
     </Tab.Navigator>
   );
 }
@@ -76,30 +159,101 @@ export default function AppNavigator({ showToast }: AppNavigatorProps) {
   const { isAuthenticated } = useAuth();
 
   return (
-    <NavigationContainer linking={linking}>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {isAuthenticated ? (
-          <>
-            <Stack.Screen name="MainTabs" component={MainTabs} />
-            <Stack.Screen name="EditProfile" component={EditProfileScreen} />
-            <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
-            <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} />
-            <Stack.Screen name="LanguageSettings" component={LanguageSettingsScreen} />
-            <Stack.Screen name="Help" component={HelpScreen} />
-            <Stack.Screen name="AboutApp" component={AboutAppScreen} />
-          </>
-        ) : (
-          <>
-            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-            <Stack.Screen name="Login">
-              {() => <LoginScreen showToast={showToast} />}
-            </Stack.Screen>
-            <Stack.Screen name="Register">
-              {() => <RegisterScreen showToast={showToast} />}
-            </Stack.Screen>
-          </>
-        )}
-      </Stack.Navigator>
-    </NavigationContainer>
+    <>
+      <StatusBar 
+        barStyle="dark-content" 
+        backgroundColor="#f0fdf4"
+        translucent={false}
+      />
+      <NavigationContainer 
+        linking={linking} 
+        theme={MagicUITheme}
+      >
+        <Stack.Navigator
+          screenOptions={stackScreenOptions}
+        >
+          {isAuthenticated ? (
+            <>
+              <Stack.Screen 
+                name="MainTabs" 
+                component={MainTabs}
+                options={{
+                  headerShown: false,
+                  cardStyle: { backgroundColor: 'transparent' },
+                }}
+              />
+              <Stack.Screen 
+                name="EditProfile" 
+                component={EditProfileScreen}
+                options={{
+                  headerShown: false,
+                }}
+              />
+              <Stack.Screen 
+                name="ChangePassword" 
+                component={ChangePasswordScreen}
+                options={{
+                  headerShown: false,
+                }}
+              />
+              <Stack.Screen 
+                name="NotificationSettings" 
+                component={NotificationSettingsScreen}
+                options={{
+                  headerShown: false,
+                }}
+              />
+              <Stack.Screen 
+                name="LanguageSettings" 
+                component={LanguageSettingsScreen}
+                options={{
+                  headerShown: false,
+                }}
+              />
+              <Stack.Screen 
+                name="Help" 
+                component={HelpScreen}
+                options={{
+                  headerShown: false,
+                }}
+              />
+              <Stack.Screen 
+                name="AboutApp" 
+                component={AboutAppScreen}
+                options={{
+                  headerShown: false,
+                }}
+              />
+            </>
+          ) : (
+            <>
+              <Stack.Screen 
+                name="Onboarding" 
+                component={OnboardingScreen}
+                options={{
+                  headerShown: false,
+                }}
+              />
+              <Stack.Screen 
+                name="Login"
+                options={{
+                  headerShown: false,
+                }}
+              >
+                {() => <LoginScreen showToast={showToast} />}
+              </Stack.Screen>
+              <Stack.Screen 
+                name="Register"
+                options={{
+                  headerShown: false,
+                }}
+              >
+                {() => <RegisterScreen showToast={showToast} />}
+              </Stack.Screen>
+            </>
+          )}
+        </Stack.Navigator>
+      </NavigationContainer>
+    </>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   Animated,
   Dimensions,
@@ -7,9 +7,13 @@ import {
   View,
   TouchableOpacity,
   Platform,
+  StatusBar,
+  SafeAreaView,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 
 interface Slide {
   title: string;
@@ -46,20 +50,28 @@ export default function OnboardingScreen() {
   const navigation = useNavigation<any>();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
+  
   const slideX = useRef(new Animated.Value(0)).current;
   const slideOpacity = useRef(new Animated.Value(1)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
 
   const animateToLogin = () => {
     setIsAnimating(true);
     Animated.parallel([
       Animated.timing(slideX, {
         toValue: -SCREEN_WIDTH,
-        duration: 260,
+        duration: 300,
         useNativeDriver: true,
       }),
       Animated.timing(slideOpacity, {
         toValue: 0,
-        duration: 220,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 0.9,
+        duration: 300,
         useNativeDriver: true,
       }),
     ]).start(() => {
@@ -77,30 +89,37 @@ export default function OnboardingScreen() {
     }
 
     setIsAnimating(true);
+    
     Animated.parallel([
-      Animated.timing(slideX, {
-        toValue: -SCREEN_WIDTH,
-        duration: 240,
-        useNativeDriver: true,
-      }),
       Animated.timing(slideOpacity, {
         toValue: 0,
-        duration: 180,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 0.95,
+        duration: 200,
         useNativeDriver: true,
       }),
     ]).start(() => {
       setCurrentSlide((prev) => prev + 1);
       slideX.setValue(SCREEN_WIDTH);
+      scaleAnim.setValue(0.95);
 
       Animated.parallel([
         Animated.timing(slideX, {
           toValue: 0,
-          duration: 280,
+          duration: 350,
           useNativeDriver: true,
         }),
         Animated.timing(slideOpacity, {
           toValue: 1,
-          duration: 220,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 300,
           useNativeDriver: true,
         }),
       ]).start(() => setIsAnimating(false));
@@ -108,38 +127,72 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <View style={styles.onboardingContainer}>
-      {/* Top Area: Skip Button */}
-      <View style={styles.onboardingHeader}>
-        <TouchableOpacity onPress={animateToLogin} style={styles.skipBtn} disabled={isAnimating}>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      
+      {/* Background */}
+      <View style={styles.background}>
+        <LinearGradient
+          colors={['#f0fdf4', '#ffffff'] as const}
+          style={styles.gradientBackground}
+        />
+      </View>
+
+      {/* Decorative Elements */}
+      <View style={styles.decorativeCircle1} />
+      <View style={styles.decorativeCircle2} />
+      <View style={styles.decorativeCircle3} />
+
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity 
+          onPress={animateToLogin} 
+          style={styles.skipBtn} 
+          disabled={isAnimating}
+        >
           <Text style={styles.skipBtnText}>Lewati</Text>
+          <Ionicons name="arrow-forward" size={16} color="#22c55e" />
         </TouchableOpacity>
       </View>
 
-      {/* Middle Area: Circles & Text */}
+      {/* Main Content */}
       <Animated.View
         style={[
-          styles.onboardingMiddle,
+          styles.middleContent,
           {
             opacity: slideOpacity,
-            transform: [{ translateX: slideX }],
+            transform: [
+              { translateX: slideX },
+              { scale: scaleAnim },
+            ],
           },
         ]}
       >
-        <View style={styles.outerCircle}>
-          <View style={styles.middleCircle}>
-            <View style={styles.innerCircle}>
-              <MaterialCommunityIcons name={SLIDES[currentSlide].icon} size={64} color="#38a154" />
-            </View>
+        {/* Icon Container */}
+        <View style={styles.iconContainer}>
+          <View style={styles.iconCircle}>
+            <LinearGradient
+              colors={['#22c55e', '#16a34a'] as const}
+              style={styles.iconGradient}
+            >
+              <MaterialCommunityIcons 
+                name={SLIDES[currentSlide].icon} 
+                size={64} 
+                color="#ffffff" 
+              />
+            </LinearGradient>
           </View>
         </View>
 
-        <Text style={styles.onboardingTitle}>{SLIDES[currentSlide].title}</Text>
-        <Text style={styles.onboardingDesc}>{SLIDES[currentSlide].description}</Text>
+        <View style={styles.textContainer}>
+          <Text style={styles.title}>{SLIDES[currentSlide].title}</Text>
+          <Text style={styles.description}>{SLIDES[currentSlide].description}</Text>
+        </View>
       </Animated.View>
 
-      {/* Bottom Area: Indicators & Button */}
-      <View style={styles.onboardingBottom}>
+      {/* Bottom Section */}
+      <View style={styles.bottomSection}>
+        {/* Indicators */}
         <View style={styles.indicatorRow}>
           {SLIDES.map((_, index) => (
             <View
@@ -152,147 +205,196 @@ export default function OnboardingScreen() {
           ))}
         </View>
 
+        {/* Next Button */}
         <TouchableOpacity
           style={styles.onboardingButton}
           onPress={goToNextSlide}
           disabled={isAnimating}
+          activeOpacity={0.8}
         >
-          <Text style={styles.onboardingButtonText}>
-            {currentSlide === SLIDES.length - 1 ? 'Mulai Sekarang' : 'Selanjutnya'}
-          </Text>
-          <Ionicons name="arrow-forward" size={18} color="#38a154" style={{ marginLeft: 6 }} />
+          <LinearGradient
+            colors={['#22c55e', '#16a34a'] as const}
+            style={styles.buttonGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+          >
+            <Text style={styles.onboardingButtonText}>
+              {currentSlide === SLIDES.length - 1 ? 'Mulai Sekarang' : 'Selanjutnya'}
+            </Text>
+            <Ionicons 
+              name="arrow-forward" 
+              size={20} 
+              color="#ffffff" 
+              style={styles.buttonIcon} 
+            />
+          </LinearGradient>
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  onboardingContainer: {
+  container: {
     flex: 1,
-    backgroundColor: '#38a154', // Green background
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: Platform.OS === 'ios' ? 20 : 40,
-    paddingBottom: 40,
+    backgroundColor: '#ffffff',
   },
-  onboardingHeader: {
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    height: 40,
-    alignItems: 'center',
+  background: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  gradientBackground: {
+    flex: 1,
+  },
+  decorativeCircle1: {
+    position: 'absolute',
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: '#dcfce7',
+    top: -100,
+    right: -80,
+    opacity: 0.5,
+  },
+  decorativeCircle2: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: '#bbf7d0',
+    bottom: 100,
+    left: -60,
+    opacity: 0.4,
+  },
+  decorativeCircle3: {
+    position: 'absolute',
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: '#86efac',
+    top: '40%',
+    right: -40,
+    opacity: 0.2,
+  },
+  header: {
+    paddingHorizontal: 24,
+    paddingTop: Platform.OS === 'ios' ? 10 : 20,
+    height: 60,
+    alignItems: 'flex-end',
   },
   skipBtn: {
-    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     paddingVertical: 8,
+    paddingHorizontal: 4,
   },
   skipBtnText: {
-    color: '#ffffff',
+    color: '#64748b',
     fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'GeistSans-SemiBold',
-    opacity: 0.9,
+    fontWeight: '500',
+    marginRight: 2,
   },
-  onboardingMiddle: {
-    alignItems: 'center',
-    justifyContent: 'center',
+  middleContent: {
     flex: 1,
-    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
   },
-  outerCircle: {
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+  iconContainer: {
+    marginBottom: 40,
+  },
+  iconCircle: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    shadowColor: '#22c55e',
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  iconGradient: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  middleCircle: {
-    width: 170,
-    height: 170,
-    borderRadius: 85,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    justifyContent: 'center',
+  textContainer: {
     alignItems: 'center',
   },
-  innerCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#ffffff', // Solid white circle
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  onboardingTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#ffffff',
+  title: {
+    fontSize: 26,
+    fontWeight: '700',
+    color: '#0f172a',
     textAlign: 'center',
-    marginTop: 40,
-    marginBottom: 16,
-    lineHeight: 32,
-    letterSpacing: 0.5,
-    fontFamily: 'GeistSans-Bold',
+    marginBottom: 12,
+    lineHeight: 34,
   },
-  onboardingDesc: {
-    fontSize: 14,
-    color: '#ffffff',
+  description: {
+    fontSize: 15,
+    color: '#64748b',
     textAlign: 'center',
-    lineHeight: 22,
-    opacity: 0.85,
-    paddingHorizontal: 12,
-    fontFamily: 'GeistSans-Regular',
+    lineHeight: 24,
+    paddingHorizontal: 10,
   },
-  onboardingBottom: {
-    width: '100%',
-    alignItems: 'center',
-    gap: 30,
+  bottomSection: {
+    paddingHorizontal: 24,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 30,
+    gap: 32,
   },
   indicatorRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    gap: 8,
   },
   indicatorDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.35)',
-    marginHorizontal: 5,
+    backgroundColor: '#d1d5db',
   },
   indicatorDotActive: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#22c55e',
+    width: 24,
+    height: 8,
+    borderRadius: 4,
   },
   onboardingButton: {
     width: '100%',
-    backgroundColor: '#f1f5f2', // off-white
-    borderRadius: 20,
     height: 56,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#22c55e',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  buttonGradient: {
+    flex: 1,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    elevation: 3,
   },
   onboardingButtonText: {
-    color: '#38a154',
+    color: '#ffffff',
     fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    fontFamily: 'GeistSans-Bold',
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
+  buttonIcon: {
+    marginLeft: 8,
   },
 });

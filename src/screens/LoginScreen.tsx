@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -9,38 +9,149 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Animated,
+  Dimensions,
+  StatusBar,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
+
+const { width, height } = Dimensions.get('window');
 
 interface LoginScreenProps {
   showToast: (message: string, type?: 'success' | 'error') => void;
 }
 
-export default function LoginScreen({
-  showToast,
-}: LoginScreenProps) {
+export default function LoginScreen({ showToast }: LoginScreenProps) {
   const navigation = useNavigation<any>();
   const { login } = useAuth();
-  const [focusedInput, setFocusedInput] = useState<'loginInput' | 'password' | null>(null);
-  const [loginInput, setLoginInput] = useState<string>('');
+  const [focusedInput, setFocusedInput] = useState<'email' | 'password' | null>(null);
+  const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [passwordVisible, setPasswordVisible] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
+  const [isButtonActive, setIsButtonActive] = useState<boolean>(false);
+
+  // Entrance animations
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+  const scaleAnim = useRef(new Animated.Value(0.95)).current;
+
+  // Continuous decorative animations
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const floatAnim1 = useRef(new Animated.Value(0)).current;
+  const floatAnim2 = useRef(new Animated.Value(0)).current;
+
+  // Button feedback (press scale only — no lift, no translateY)
+  const buttonScale = useRef(new Animated.Value(1)).current;
+  const buttonGlow = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    Animated.loop(
+      Animated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 24000,
+        useNativeDriver: true,
+      })
+    ).start();
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim1, {
+          toValue: 1,
+          duration: 3200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatAnim1, {
+          toValue: 0,
+          duration: 3200,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim2, {
+          toValue: 1,
+          duration: 3800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatAnim2, {
+          toValue: 0,
+          duration: 3800,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []);
+
+  // Button feedback: only a gentle scale + glow, NO lift/translateY, NO background blur
+  const handleButtonActiveIn = () => {
+    setIsButtonActive(true);
+    Animated.parallel([
+      Animated.spring(buttonScale, {
+        toValue: 0.98,
+        friction: 6,
+        useNativeDriver: true,
+      }),
+      Animated.timing(buttonGlow, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const handleButtonActiveOut = () => {
+    setIsButtonActive(false);
+    Animated.parallel([
+      Animated.spring(buttonScale, {
+        toValue: 1,
+        friction: 6,
+        useNativeDriver: true,
+      }),
+      Animated.timing(buttonGlow, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
 
   const handleLogin = async () => {
-    if (!loginInput || !password) {
-      showToast('Harap isi email/username dan password!', 'error');
+    if (!email || !password) {
+      showToast('Harap isi email dan password!', 'error');
       return;
     }
 
     setLoading(true);
-    const result = await login(loginInput, password);
+    const result = await login(email, password);
     setLoading(false);
 
     if (result.success) {
-      setLoginInput('');
+      setEmail('');
       setPassword('');
       showToast('Selamat datang kembali!', 'success');
     } else {
@@ -48,285 +159,616 @@ export default function LoginScreen({
     }
   };
 
+  const rotateInterpolate = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  const float1Interpolate = floatAnim1.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -20],
+  });
+
+  const float2Interpolate = floatAnim2.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 20],
+  });
+
+  const glowOpacity = buttonGlow.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 0.35],
+  });
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.flex1}
+      style={styles.container}
     >
-      {/* Soft pastel ambient background glows */}
-      <View style={styles.glowCircle1} />
-      <View style={styles.glowCircle2} />
+      <StatusBar barStyle="dark-content" backgroundColor="#f0fdf4" />
 
-      <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-        {/* Header Logo */}
-        <View style={styles.header}>
-          <View style={styles.logoBadge}>
-            <MaterialCommunityIcons name="leaf" size={40} color="#10B981" />
-            <Ionicons name="scan-outline" size={44} color="#06B6D4" style={styles.scanIcon} />
+      {/* Background gradient */}
+      <LinearGradient
+        colors={['#dcfce7', '#f0fdf4', '#eff6ff'] as const}
+        style={styles.background}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      />
+
+      {/* Floating eco glass bubbles (leaves + plastic waste) — purely decorative, never react to hover/focus */}
+      <Animated.View
+        style={[styles.ecoBubble, styles.orb1, { transform: [{ translateY: float1Interpolate }, { rotate: rotateInterpolate }] }]}
+        pointerEvents="none"
+      >
+        <BlurView intensity={40} tint="light" style={styles.orbBlur} />
+        <MaterialCommunityIcons name="leaf" size={30} color="rgba(22, 163, 74, 0.55)" style={styles.ecoIcon} />
+      </Animated.View>
+
+      <Animated.View
+        style={[styles.ecoBubble, styles.orb2, { transform: [{ translateY: float2Interpolate }, { rotate: rotateInterpolate }] }]}
+        pointerEvents="none"
+      >
+        <BlurView intensity={35} tint="light" style={styles.orbBlur} />
+        <MaterialCommunityIcons
+          name="bottle-soda-classic-outline"
+          size={26}
+          color="rgba(59, 130, 246, 0.5)"
+          style={styles.ecoIcon}
+        />
+      </Animated.View>
+
+      <Animated.View
+        style={[styles.ecoBubble, styles.orb3, { transform: [{ translateY: float1Interpolate }, { rotate: rotateInterpolate }] }]}
+        pointerEvents="none"
+      >
+        <BlurView intensity={30} tint="light" style={styles.orbBlur} />
+        <MaterialCommunityIcons name="leaf" size={20} color="rgba(16, 185, 129, 0.5)" style={styles.ecoIcon} />
+      </Animated.View>
+
+      <Animated.View
+        style={[styles.ecoBubble, styles.orb4, { transform: [{ translateY: float2Interpolate }, { rotate: rotateInterpolate }] }]}
+        pointerEvents="none"
+      >
+        <BlurView intensity={30} tint="light" style={styles.orbBlur} />
+        <MaterialCommunityIcons name="trash-can-outline" size={22} color="rgba(100, 116, 139, 0.55)" style={styles.ecoIcon} />
+      </Animated.View>
+
+      <Animated.View
+        style={[styles.ecoBubble, styles.orb5, { transform: [{ translateY: float1Interpolate }, { rotate: rotateInterpolate }] }]}
+        pointerEvents="none"
+      >
+        <BlurView intensity={35} tint="light" style={styles.orbBlur} />
+        <MaterialCommunityIcons name="leaf" size={18} color="rgba(34, 197, 94, 0.5)" style={styles.ecoIcon} />
+      </Animated.View>
+
+      <Animated.View
+        style={[styles.ecoBubble, styles.orb6, { transform: [{ translateY: float2Interpolate }, { rotate: rotateInterpolate }] }]}
+        pointerEvents="none"
+      >
+        <BlurView intensity={30} tint="light" style={styles.orbBlur} />
+        <MaterialCommunityIcons name="recycle" size={24} color="rgba(34, 197, 94, 0.5)" style={styles.ecoIcon} />
+      </Animated.View>
+
+      <Animated.View
+        style={[styles.ecoBubble, styles.orb7, { transform: [{ translateY: float1Interpolate }, { rotate: rotateInterpolate }] }]}
+        pointerEvents="none"
+      >
+        <BlurView intensity={30} tint="light" style={styles.orbBlur} />
+        <MaterialCommunityIcons name="leaf" size={16} color="rgba(22, 163, 74, 0.5)" style={styles.ecoIcon} />
+      </Animated.View>
+
+      <Animated.View
+        style={[styles.ecoBubble, styles.orb8, { transform: [{ translateY: float2Interpolate }, { rotate: rotateInterpolate }] }]}
+        pointerEvents="none"
+      >
+        <BlurView intensity={32} tint="light" style={styles.orbBlur} />
+        <MaterialCommunityIcons name="bag-personal-outline" size={22} color="rgba(100, 116, 139, 0.5)" style={styles.ecoIcon} />
+      </Animated.View>
+
+      <Animated.View
+        style={[styles.ecoBubble, styles.orb9, { transform: [{ translateY: float1Interpolate }, { rotate: rotateInterpolate }] }]}
+        pointerEvents="none"
+      >
+        <BlurView intensity={28} tint="light" style={styles.orbBlur} />
+        <MaterialCommunityIcons name="leaf" size={22} color="rgba(16, 185, 129, 0.5)" style={styles.ecoIcon} />
+      </Animated.View>
+
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <Animated.View
+          style={[
+            styles.contentWrapper,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
+            },
+          ]}
+        >
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.logoContainer}>
+              <LinearGradient colors={['#22c55e', '#16a34a'] as const} style={styles.logoGradient}>
+                <MaterialCommunityIcons name="leaf" size={36} color="#ffffff" />
+              </LinearGradient>
+              <View style={styles.logoBadge}>
+                <Ionicons name="scan-outline" size={28} color="#22c55e" />
+              </View>
+            </View>
+
+            <Text style={styles.appName}>EcoClassify</Text>
+            <Text style={styles.appSubtitle}>Smart Waste Classification</Text>
           </View>
-          <Text style={styles.appName}>ECHO TECH</Text>
-          <Text style={styles.appSubtitle}>Smart Eco-Waste Detection App</Text>
-        </View>
 
-        {/* Login Form Card */}
-        <View style={styles.card}>
-          {/* Card Tech Accent Line */}
-          <View style={styles.techAccentLine} />
-          
-          <Text style={styles.cardTitle}>Masuk Akun</Text>
-          
-          <View
-            style={[
-              styles.inputContainer,
-              focusedInput === 'loginInput' && styles.inputContainerFocused,
-            ]}
-          >
-            <Ionicons
-              name="person-outline"
-              size={20}
-              color={focusedInput === 'loginInput' ? '#10B981' : '#94A3B8'}
-              style={styles.inputIcon}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Email atau Username"
-              placeholderTextColor="#94A3B8"
-              value={loginInput}
-              onChangeText={setLoginInput}
-              autoCapitalize="none"
-              onFocus={() => setFocusedInput('loginInput')}
-              onBlur={() => setFocusedInput(null)}
-            />
+          {/* Glassmorphism Login Card — no hover interaction, background never blurs */}
+          <View style={styles.cardShadowWrapper}>
+            <BlurView intensity={50} tint="light" style={styles.card}>
+              <View style={styles.cardInnerBorder} />
+
+              <Text style={styles.cardTitle}>Selamat Datang Kembali </Text>
+              <Text style={styles.cardSubtitle}>Masuk untuk melanjutkan</Text>
+
+              {/* Email Input */}
+              <View style={styles.inputWrapper}>
+                <Text style={styles.inputLabel}>Email</Text>
+                <View
+                  style={[
+                    styles.inputContainer,
+                    focusedInput === 'email' && styles.inputContainerFocused,
+                  ]}
+                >
+                  <Ionicons
+                    name="mail-outline"
+                    size={20}
+                    color={focusedInput === 'email' ? '#22c55e' : '#64748b'}
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="email@example.com"
+                    placeholderTextColor="#94a3b8"
+                    value={email}
+                    onChangeText={setEmail}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    onFocus={() => setFocusedInput('email')}
+                    onBlur={() => setFocusedInput(null)}
+                  />
+                </View>
+              </View>
+
+              {/* Password Input */}
+              <View style={styles.inputWrapper}>
+                <Text style={styles.inputLabel}>Kata Sandi</Text>
+                <View
+                  style={[
+                    styles.inputContainer,
+                    focusedInput === 'password' && styles.inputContainerFocused,
+                  ]}
+                >
+                  <Ionicons
+                    name="lock-closed-outline"
+                    size={20}
+                    color={focusedInput === 'password' ? '#22c55e' : '#64748b'}
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={[styles.input, styles.inputWithPadding]}
+                    placeholder="Masukkan kata sandi"
+                    placeholderTextColor="#94a3b8"
+                    secureTextEntry={!passwordVisible}
+                    value={password}
+                    onChangeText={setPassword}
+                    autoCapitalize="none"
+                    onFocus={() => setFocusedInput('password')}
+                    onBlur={() => setFocusedInput(null)}
+                  />
+                  <TouchableOpacity
+                    style={styles.eyeIcon}
+                    onPress={() => setPasswordVisible(!passwordVisible)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={passwordVisible ? 'eye-off-outline' : 'eye-outline'}
+                      size={20}
+                      color={focusedInput === 'password' ? '#22c55e' : '#64748b'}
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Forgot Password */}
+              <TouchableOpacity style={styles.forgotPassword} activeOpacity={0.7}>
+                <Text style={styles.forgotPasswordText}>Lupa kata sandi?</Text>
+              </TouchableOpacity>
+
+              {/* Login Button — scale + glow feedback only, NO lift/translateY */}
+              <Animated.View
+                style={[
+                  styles.buttonWrapper,
+                  { transform: [{ scale: buttonScale }] },
+                ]}
+              >
+                <Animated.View
+                  style={[styles.buttonGlow, { opacity: glowOpacity }]}
+                  pointerEvents="none"
+                />
+                <TouchableOpacity
+                  style={[styles.primaryButton, loading && styles.buttonDisabled]}
+                  onPress={handleLogin}
+                  disabled={loading}
+                  activeOpacity={0.9}
+                  onPressIn={Platform.OS !== 'web' ? handleButtonActiveIn : undefined}
+                  onPressOut={Platform.OS !== 'web' ? handleButtonActiveOut : undefined}
+                  {...(Platform.OS === 'web'
+                    ? ({
+                        onMouseEnter: handleButtonActiveIn,
+                        onMouseLeave: handleButtonActiveOut,
+                      } as any)
+                    : {})}
+                >
+                  <LinearGradient
+                    colors={
+                      isButtonActive
+                        ? (['#16a34a', '#15803d'] as const)
+                        : (['#22c55e', '#16a34a'] as const)
+                    }
+                    style={styles.buttonGradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color="#ffffff" size="small" />
+                    ) : (
+                      <>
+                        <Text style={styles.buttonText}>Masuk</Text>
+                        <Ionicons
+                          name="arrow-forward"
+                          size={20}
+                          color="#ffffff"
+                          style={styles.buttonIcon}
+                        />
+                      </>
+                    )}
+                  </LinearGradient>
+                </TouchableOpacity>
+              </Animated.View>
+
+              {/* Divider */}
+              <View style={styles.dividerContainer}>
+                <View style={styles.divider} />
+                <Text style={styles.dividerText}>atau</Text>
+                <View style={styles.divider} />
+              </View>
+
+              {/* Register Link */}
+              <View style={styles.footer}>
+                <Text style={styles.footerText}>Belum memiliki akun?</Text>
+                <TouchableOpacity onPress={() => navigation.navigate('Register')} activeOpacity={0.7}>
+                  <Text style={styles.footerLink}>Daftar Sekarang</Text>
+                </TouchableOpacity>
+              </View>
+            </BlurView>
           </View>
-
-          <View
-            style={[
-              styles.inputContainer,
-              focusedInput === 'password' && styles.inputContainerFocused,
-            ]}
-          >
-            <Ionicons
-              name="lock-closed-outline"
-              size={20}
-              color={focusedInput === 'password' ? '#10B981' : '#94A3B8'}
-              style={styles.inputIcon}
-            />
-            <TextInput
-              style={[styles.input, { paddingRight: 45 }]}
-              placeholder="Kata Sandi"
-              placeholderTextColor="#94A3B8"
-              secureTextEntry={!passwordVisible}
-              value={password}
-              onChangeText={setPassword}
-              autoCapitalize="none"
-              onFocus={() => setFocusedInput('password')}
-              onBlur={() => setFocusedInput(null)}
-            />
-            <TouchableOpacity
-              style={styles.eyeIcon}
-              onPress={() => setPasswordVisible(!passwordVisible)}
-            >
-              <Ionicons
-                name={passwordVisible ? 'eye-off-outline' : 'eye-outline'}
-                size={20}
-                color={focusedInput === 'password' ? '#10B981' : '#94A3B8'}
-              />
-            </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={handleLogin}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Masuk</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {/* Footer Switch */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Belum memiliki akun?</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-            <Text style={styles.footerLink}>Daftar Sekarang</Text>
-          </TouchableOpacity>
-        </View>
+        </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  flex1: {
+  container: {
     flex: 1,
+    backgroundColor: '#f0fdf4',
   },
-  scrollContainer: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 40,
-    position: 'relative',
-    zIndex: 1,
-  },
-  glowCircle1: {
-    position: 'absolute',
-    top: -50,
-    left: -50,
-    width: 250,
-    height: 250,
-    borderRadius: 125,
-    backgroundColor: 'rgba(16, 185, 129, 0.05)', // Soft light green glow
-    zIndex: 0,
-  },
-  glowCircle2: {
-    position: 'absolute',
-    bottom: -50,
-    right: -50,
-    width: 250,
-    height: 250,
-    borderRadius: 125,
-    backgroundColor: 'rgba(6, 182, 212, 0.05)', // Soft light cyan glow
-    zIndex: 0,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 35,
-  },
-  logoBadge: {
-    width: 84,
-    height: 84,
-    borderRadius: 24,
-    backgroundColor: 'rgba(16, 185, 129, 0.06)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: 'rgba(16, 185, 129, 0.2)',
-    position: 'relative',
-    marginBottom: 16,
-  },
-  scanIcon: {
-    position: 'absolute',
-    opacity: 0.8,
-  },
-  appName: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#0F172A', // Dark slate text color for high contrast in light mode
-    letterSpacing: 3,
-    marginBottom: 4,
-    textShadowColor: 'rgba(16, 185, 129, 0.15)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 6,
-    fontFamily: 'GeistSans-ExtraBold',
-  },
-  appSubtitle: {
-    fontSize: 13,
-    color: '#64748B', // Muted slate gray
-    fontWeight: '500',
-    fontFamily: 'GeistSans-Medium',
-  },
-  card: {
-    backgroundColor: '#FFFFFF', // Pure white card
-    borderRadius: 24,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: '#E2E8F0', // Soft light gray border
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.06, // Soft light shadow
-    shadowRadius: 20,
-    elevation: 4,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  techAccentLine: {
+  background: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: 4,
-    backgroundColor: '#10B981', // Clean green top accent
+    bottom: 0,
+  },
+  orbBlur: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 999,
+  },
+  // Shared glass bubble look for every floating eco icon
+  ecoBubble: {
+    position: 'absolute',
+    borderRadius: 999,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.35)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+    zIndex: 0,
+  },
+  ecoIcon: {
+    zIndex: 1,
+  },
+  orb1: {
+    width: 88,
+    height: 88,
+    top: 18,
+    right: width * 0.1,
+  },
+  orb2: {
+    width: 72,
+    height: 72,
+    bottom: height * 0.34,
+    left: width * 0.08,
+  },
+  orb3: {
+    width: 54,
+    height: 54,
+    top: height * 0.2,
+    right: width * 0.2,
+  },
+  orb4: {
+    width: 60,
+    height: 60,
+    bottom: height * 0.13,
+    right: width * 0.1,
+  },
+  orb5: {
+    width: 46,
+    height: 46,
+    top: height * 0.44,
+    left: width * 0.16,
+  },
+  orb6: {
+    width: 64,
+    height: 64,
+    bottom: height * 0.02,
+    left: width * 0.32,
+  },
+  orb7: {
+    width: 40,
+    height: 40,
+    top: height * 0.08,
+    left: width * 0.22,
+  },
+  orb8: {
+    width: 50,
+    height: 50,
+    top: height * 0.3,
+    left: width * 0.06,
+  },
+  orb9: {
+    width: 56,
+    height: 56,
+    bottom: height * 0.24,
+    right: width * 0.24,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: Platform.OS === 'web' ? Math.min(40, width * 0.08) : 24,
+    paddingVertical: Platform.OS === 'web' ? 60 : 40,
+  },
+  contentWrapper: {
+    width: '100%',
+    maxWidth: 420,
+    alignSelf: 'center',
+    zIndex: 2,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    position: 'relative',
+  },
+  logoGradient: {
+    width: 64,
+    height: 64,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#22c55e',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  logoBadge: {
+    position: 'absolute',
+    right: -8,
+    bottom: -8,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 12,
+    padding: 4,
+    borderWidth: 2,
+    borderColor: '#22c55e',
+  },
+  appName: {
+    fontSize: Platform.OS === 'web' ? 32 : 28,
+    fontWeight: '800',
+    color: '#0f172a',
+    letterSpacing: 1.5,
+    marginBottom: 4,
+  },
+  appSubtitle: {
+    fontSize: 13,
+    color: '#475569',
+    fontWeight: '500',
+    letterSpacing: 0.5,
+  },
+  cardShadowWrapper: {
+    borderRadius: 28,
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.12,
+    shadowRadius: 30,
+    elevation: 8,
+    zIndex: 3,
+  },
+  // Glassmorphism card: frosted, semi-transparent, soft white border — never toggles
+  card: {
+    borderRadius: 28,
+    padding: Platform.OS === 'web' ? 32 : 24,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255, 255, 255, 0.55)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.6)',
+  },
+  cardInnerBorder: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
   },
   cardTitle: {
-    fontSize: 20,
+    fontSize: Platform.OS === 'web' ? 24 : 22,
     fontWeight: '700',
-    color: '#0F172A', // Dark slate text
-    marginBottom: 20,
-    letterSpacing: 0.5,
-    fontFamily: 'GeistSans-Bold',
-    marginTop: 4,
+    color: '#0f172a',
+    marginBottom: 4,
+  },
+  cardSubtitle: {
+    fontSize: 14,
+    color: '#475569',
+    marginBottom: 28,
+  },
+  inputWrapper: {
+    marginBottom: 18,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0f172a',
+    marginBottom: 6,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC', // Extremely soft gray background for inputs
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: '#E2E8F0', // Light border
-    marginBottom: 16,
+    borderColor: 'rgba(226, 232, 240, 0.8)',
     paddingHorizontal: 16,
-    height: 56,
+    height: Platform.OS === 'web' ? 52 : 56,
   },
   inputContainerFocused: {
-    borderColor: '#10B981', // Focus emerald green
-    backgroundColor: '#FFFFFF',
+    borderColor: '#22c55e',
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    shadowColor: '#22c55e',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 2,
   },
   inputIcon: {
     marginRight: 12,
   },
   input: {
     flex: 1,
-    color: '#0F172A', // Dark text color for inputs
-    fontSize: 15,
+    color: '#0f172a',
+    fontSize: Platform.OS === 'web' ? 15 : 16,
     fontWeight: '500',
-    fontFamily: 'GeistSans-Regular',
-    borderWidth: 0,
-    ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}),
-  } as any,
+    paddingVertical: Platform.OS === 'ios' ? 12 : 0,
+  },
+  inputWithPadding: {
+    paddingRight: 48,
+  },
   eyeIcon: {
     position: 'absolute',
     right: 16,
-    height: '100%',
-    justifyContent: 'center',
+    padding: 4,
+  },
+  forgotPassword: {
+    alignSelf: 'flex-end',
+    marginBottom: 24,
+    marginTop: -4,
+  },
+  forgotPasswordText: {
+    fontSize: 13,
+    color: '#16a34a',
+    fontWeight: '600',
+  },
+  buttonWrapper: {
+    position: 'relative',
+    marginBottom: 8,
+  },
+  // Static glow behind the button, only intensifies on press/hover — no translateY, no lift
+  buttonGlow: {
+    position: 'absolute',
+    top: -6,
+    left: -6,
+    right: -6,
+    bottom: -6,
+    borderRadius: 20,
+    backgroundColor: '#22c55e',
   },
   primaryButton: {
-    backgroundColor: '#10B981', // Emerald green button looks crisp on white cards
     borderRadius: 14,
-    height: 54,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 8,
-    shadowColor: '#10B981',
+    height: Platform.OS === 'web' ? 52 : 56,
+    overflow: 'hidden',
+    shadowColor: '#22c55e',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
-    elevation: 3,
+    elevation: 4,
+    zIndex: 2,
+  },
+  buttonDisabled: {
+    opacity: 0.7,
+  },
+  buttonGradient: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
   },
   buttonText: {
-    color: '#fff',
+    color: '#ffffff',
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.5,
-    fontFamily: 'GeistSans-Bold',
+  },
+  buttonIcon: {
+    marginLeft: 8,
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 24,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(226, 232, 240, 0.8)',
+  },
+  dividerText: {
+    color: '#64748b',
+    fontSize: 13,
+    paddingHorizontal: 16,
+    fontWeight: '500',
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 28,
+    alignItems: 'center',
   },
   footerText: {
-    color: '#64748B',
+    color: '#475569',
     fontSize: 14,
-    fontFamily: 'GeistSans-Regular',
   },
   footerLink: {
-    color: '#10B981',
+    color: '#16a34a',
+    fontSize: 14,
     fontWeight: '700',
     marginLeft: 6,
-    textDecorationLine: 'underline',
-    fontFamily: 'GeistSans-Bold',
   },
 });
