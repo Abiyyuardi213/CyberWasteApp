@@ -711,15 +711,26 @@ app.post('/api/eco-points/redeem', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Poin Anda tidak mencukupi untuk menukarkan reward ini.' });
     }
 
-    await dbRun(`
+    const redeemResult = await dbRun(`
       INSERT INTO redeemed_rewards (user_id, reward_id, points)
       VALUES (?, ?, ?)
     `, [req.user.id, reward.id, reward.points]);
+
+    const redemption = {
+      id: String(redeemResult.lastID),
+      rewardId: reward.id,
+      rewardName: reward.name,
+      rewardDescription: reward.description,
+      icon: reward.icon,
+      points: reward.points,
+      redeemedAt: new Date().toISOString(),
+    };
 
     res.json({
       success: true,
       message: 'Penukaran poin berhasil!',
       availablePoints: availablePoints - reward.points,
+      redemption,
     });
   } catch (error) {
     console.error('Redeem error:', error);

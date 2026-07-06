@@ -49,6 +49,7 @@ interface RedeemRewardResponse {
   success: boolean;
   message: string;
   availablePoints: number;
+  redemption?: RedeemHistoryItem;
 }
 
 interface RedeemRewardRequest {
@@ -259,6 +260,13 @@ const ecoPointSlice = createSlice({
           ...levelInfo,
           totalPoints: action.payload.availablePoints,
         };
+
+        if (action.payload.redemption) {
+          state.redeemHistory = [
+            action.payload.redemption,
+            ...state.redeemHistory.filter((item) => item.id !== action.payload.redemption?.id),
+          ].slice(0, 20);
+        }
       })
       .addCase(redeemReward.rejected, (state, action) => {
         state.redeemingId = null;
