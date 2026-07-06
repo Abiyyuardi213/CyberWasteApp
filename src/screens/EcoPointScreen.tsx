@@ -17,7 +17,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import { fetchEcoPointData, redeemReward, Reward, startRedeem } from '../store/ecoPointSlice';
+import { fetchEcoPointData, redeemReward, RedeemHistoryItem, Reward, startRedeem } from '../store/ecoPointSlice';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { useAuth } from '../context/AuthContext';
 
@@ -27,6 +27,9 @@ const { width, height } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
 const isIOS = Platform.OS === 'ios';
 const isAndroid = Platform.OS === 'android';
+const SCREEN_PADDING = 10;
+
+type RedeemToastType = 'loading' | 'success' | 'error';
 
 // Level badge color
 const getLevelColor = (level: string) => {
@@ -276,11 +279,51 @@ const FadeInSection = ({ children, delay = 0 }: { children: React.ReactNode; del
   );
 };
 
+const formatRedeemDate = (dateString: string) => {
+  const date = new Date(dateString);
+
+  return date.toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+const RedeemHistoryCard = ({ item }: { item: RedeemHistoryItem }) => (
+  <BlurView intensity={isWeb ? 20 : 30} tint="light" style={styles.redeemHistoryCard}>
+    <View style={styles.redeemHistoryIcon}>
+      <Ionicons name={item.icon as any} size={isWeb ? 20 : 18} color="#10B981" />
+    </View>
+    <View style={styles.redeemHistoryContent}>
+      <Text style={styles.redeemHistoryName}>{item.rewardName}</Text>
+      <Text style={styles.redeemHistoryDate}>{formatRedeemDate(item.redeemedAt)}</Text>
+    </View>
+    <View style={styles.redeemHistoryPoints}>
+      <Text style={styles.redeemHistoryPointsText}>-{item.points}</Text>
+      <MaterialCommunityIcons name="leaf" size={11} color="#EF4444" />
+    </View>
+  </BlurView>
+);
+
 export default function EcoPointScreen() {
   const dispatch = useAppDispatch();
   const { token } = useAuth();
-  const { userPoints, rewards, redeemingId, loading, error } = useAppSelector((state) => state.ecoPoint);
+  const { userPoints, rewards, redeemHistory, redeemingId, loading, error } = useAppSelector((state) => state.ecoPoint);
   const [prevPoints, setPrevPoints] = useState(userPoints.totalPoints);
+  const [redeemToast, setRedeemToast] = useState<{
+    visible: boolean;
+    message: string;
+    type: RedeemToastType;
+  }>({
+    visible: false,
+    message: '',
+    type: 'loading',
+  });
+  const redeemToastY = useRef(new Animated.Value(-24)).current;
+  const redeemToastOpacity = useRef(new Animated.Value(0)).current;
+  const redeemToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -295,6 +338,57 @@ export default function EcoPointScreen() {
     }
   }, [userPoints.totalPoints]);
 
+  useEffect(() => {
+    return () => {
+      if (redeemToastTimer.current) {
+        clearTimeout(redeemToastTimer.current);
+      }
+    };
+  }, []);
+
+  const hideRedeemToast = () => {
+    Animated.parallel([
+      Animated.timing(redeemToastY, {
+        toValue: -24,
+        duration: 180,
+        useNativeDriver: true,
+      }),
+      Animated.timing(redeemToastOpacity, {
+        toValue: 0,
+        duration: 160,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setRedeemToast((current) => ({ ...current, visible: false }));
+    });
+  };
+
+  const showRedeemToast = (message: string, type: RedeemToastType, duration = 2600) => {
+    if (redeemToastTimer.current) {
+      clearTimeout(redeemToastTimer.current);
+      redeemToastTimer.current = null;
+    }
+
+    setRedeemToast({ visible: true, message, type });
+    Animated.parallel([
+      Animated.spring(redeemToastY, {
+        toValue: 0,
+        friction: 7,
+        tension: 90,
+        useNativeDriver: true,
+      }),
+      Animated.timing(redeemToastOpacity, {
+        toValue: 1,
+        duration: 180,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    if (duration > 0) {
+      redeemToastTimer.current = setTimeout(hideRedeemToast, duration);
+    }
+  };
+
   const progress = userPoints.totalPoints / userPoints.nextLevelPoints;
   const levelColor = getLevelColor(userPoints.level);
   const levelIcon = getLevelIcon(userPoints.level);
@@ -302,24 +396,31 @@ export default function EcoPointScreen() {
   const handleRedeem = async (rewardId: number, points: number) => {
     if (userPoints.totalPoints >= points) {
       try {
+        showRedeemToast('Memproses penukaran poin...', 'loading', 0);
         dispatch(startRedeem(rewardId));
         const result = await dispatch(redeemReward({ token, rewardId })).unwrap();
-        alert(result.message || 'Selamat! Reward berhasil ditukarkan.');
+        dispatch(fetchEcoPointData(token));
+        showRedeemToast(result.message || 'Reward berhasil ditukarkan.', 'success');
       } catch (redeemError) {
-        alert(typeof redeemError === 'string' ? redeemError : 'Gagal menukarkan reward.');
+        showRedeemToast(
+          typeof redeemError === 'string' ? redeemError : 'Gagal menukarkan reward.',
+          'error'
+        );
       }
     } else {
-      alert(`Poin tidak cukup. Butuh ${points - userPoints.totalPoints} poin lagi.`);
+      showRedeemToast(`Poin tidak cukup. Butuh ${points - userPoints.totalPoints} poin lagi.`, 'error');
     }
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f0fdf4" />
+      <StatusBar barStyle="dark-content" backgroundColor="#EEFDF3" />
       
       <LinearGradient
-        colors={['#f0fdf4', '#dcfce7', '#eef2ff']}
+        colors={['#dcfce7', '#f0fdf4', '#eff6ff'] as const}
         style={styles.backgroundGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
       />
 
       {/* Dekorasi Latar Belakang dengan Animasi */}
@@ -504,8 +605,31 @@ export default function EcoPointScreen() {
           </View>
         </FadeInSection>
 
+        {/* Riwayat Tukar Poin */}
+        <FadeInSection delay={700}>
+          <View style={styles.redeemHistorySection}>
+            <View style={styles.redeemHistoryHeader}>
+              <Text style={styles.sectionTitle}>🧾 Riwayat Tukar Poin</Text>
+              <Text style={styles.redeemHistoryCount}>{redeemHistory.length} transaksi</Text>
+            </View>
+
+            {redeemHistory.length > 0 ? (
+              redeemHistory.map((historyItem) => (
+                <RedeemHistoryCard key={historyItem.id} item={historyItem} />
+              ))
+            ) : (
+              <BlurView intensity={isWeb ? 20 : 30} tint="light" style={styles.redeemHistoryEmpty}>
+                <Ionicons name="receipt-outline" size={22} color="#94A3B8" />
+                <Text style={styles.redeemHistoryEmptyText}>
+                  Belum ada penukaran poin.
+                </Text>
+              </BlurView>
+            )}
+          </View>
+        </FadeInSection>
+
         {/* Tips Tambahan */}
-        <FadeInSection delay={800}>
+        <FadeInSection delay={900}>
           <BlurView intensity={isWeb ? 20 : 30} tint="light" style={styles.footerTip}>
             <Ionicons name="bulb-outline" size={isWeb ? 18 : 16} color="#1E4E2C" />
             <Text style={styles.footerTipText}>
@@ -514,6 +638,39 @@ export default function EcoPointScreen() {
           </BlurView>
         </FadeInSection>
       </ScrollView>
+
+      {redeemToast.visible && (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.redeemToast,
+            {
+              opacity: redeemToastOpacity,
+              transform: [{ translateY: redeemToastY }],
+            },
+          ]}
+        >
+          <BlurView intensity={isWeb ? 30 : 40} tint="light" style={styles.redeemToastBlur}>
+            {redeemToast.type === 'loading' ? (
+              <ActivityIndicator color="#10B981" size="small" />
+            ) : (
+              <Ionicons
+                name={redeemToast.type === 'success' ? 'checkmark-circle' : 'alert-circle'}
+                size={20}
+                color={redeemToast.type === 'success' ? '#10B981' : '#EF4444'}
+              />
+            )}
+            <Text
+              style={[
+                styles.redeemToastText,
+                redeemToast.type === 'error' && styles.redeemToastTextError,
+              ]}
+            >
+              {redeemToast.message}
+            </Text>
+          </BlurView>
+        </Animated.View>
+      )}
     </SafeAreaView>
   );
 }
@@ -521,7 +678,7 @@ export default function EcoPointScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f0fdf4',
+    backgroundColor: '#F6FBF7',
   },
   backgroundGradient: {
     position: 'absolute',
@@ -534,7 +691,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContainer: {
-    paddingBottom: isWeb ? 120 : 90,
+    paddingBottom: isWeb ? 150 : 128,
+    paddingHorizontal: SCREEN_PADDING,
   },
 
   // Dekorasi
@@ -586,19 +744,18 @@ const styles = StyleSheet.create({
 
   // Header dengan highlight
   header: {
-    marginHorizontal: isWeb ? 40 : 16,
     marginTop: isWeb ? 20 : 12,
     marginBottom: 10,
     padding: isWeb ? 20 : 14,
-    borderRadius: 18,
-    borderWidth: 2,
-    borderColor: 'rgba(76, 175, 80, 0.3)',
-    backgroundColor: 'rgba(255,255,255,0.7)',
-    shadowColor: '#4CAF50',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 4,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.82)',
+    backgroundColor: 'rgba(255,255,255,0.62)',
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    elevation: 3,
     zIndex: 1,
     overflow: 'hidden',
   },
@@ -624,12 +781,12 @@ const styles = StyleSheet.create({
   },
   headerBadgeText: {
     fontSize: isWeb ? 12 : 11,
-    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
     color: '#1E4E2C',
   },
   headerTitle: {
     fontSize: isWeb ? 26 : 22,
-    fontWeight: '900',
+    fontFamily: 'Inter-ExtraBold',
     color: '#133B1C',
     textAlign: 'center',
     letterSpacing: 0.3,
@@ -639,28 +796,27 @@ const styles = StyleSheet.create({
     color: '#64748B',
     marginTop: 2,
     textAlign: 'center',
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
   },
 
   // Async Status
   asyncStatus: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: isWeb ? 40 : 16,
     marginTop: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    backgroundColor: 'rgba(255,255,255,0.4)',
+    borderColor: 'rgba(255,255,255,0.82)',
+    backgroundColor: 'rgba(255,255,255,0.62)',
     gap: 8,
   },
   asyncStatusText: {
     flex: 1,
     color: '#133B1C',
     fontSize: 12,
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
   },
   asyncError: {
     borderColor: 'rgba(254, 202, 202, 0.5)',
@@ -672,18 +828,17 @@ const styles = StyleSheet.create({
 
   // Points Card dengan desain lebih menonjol
   pointsCard: {
-    marginHorizontal: isWeb ? 40 : 16,
     marginTop: 10,
     marginBottom: 6,
     padding: isWeb ? 24 : 18,
-    borderRadius: 24,
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    backgroundColor: 'rgba(255,255,255,0.4)',
+    borderColor: 'rgba(255,255,255,0.82)',
+    backgroundColor: 'rgba(255,255,255,0.54)',
     shadowColor: '#1E4E2C',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
+    shadowOpacity: 0.11,
+    shadowRadius: 22,
     elevation: 6,
     overflow: 'hidden',
     position: 'relative',
@@ -712,7 +867,7 @@ const styles = StyleSheet.create({
   },
   pointsTitle: {
     fontSize: isWeb ? 15 : 14,
-    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
     color: '#FFFFFF',
     marginLeft: 8,
     letterSpacing: 0.2,
@@ -725,7 +880,7 @@ const styles = StyleSheet.create({
   },
   pointsValue: {
     fontSize: isWeb ? 48 : 40,
-    fontWeight: '900',
+    fontFamily: 'Inter-ExtraBold',
     color: '#FFFFFF',
     marginBottom: 4,
     letterSpacing: 0.5,
@@ -742,7 +897,7 @@ const styles = StyleSheet.create({
   },
   pointsValueBadgeText: {
     fontSize: isWeb ? 10 : 9,
-    fontWeight: '800',
+    fontFamily: 'Inter-ExtraBold',
     color: '#FFD700',
     letterSpacing: 0.3,
   },
@@ -751,7 +906,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.9)',
     marginBottom: 16,
     zIndex: 1,
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
   },
   levelContainer: {
     backgroundColor: 'rgba(255,255,255,0.15)',
@@ -777,7 +932,7 @@ const styles = StyleSheet.create({
   },
   levelText: {
     fontSize: isWeb ? 15 : 14,
-    fontWeight: '800',
+    fontFamily: 'Inter-ExtraBold',
     marginLeft: 2,
   },
   levelProgressLabel: {
@@ -789,7 +944,7 @@ const styles = StyleSheet.create({
   },
   levelProgressText: {
     fontSize: isWeb ? 11 : 10,
-    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
     color: '#FFFFFF',
   },
   progressWrapper: {
@@ -808,17 +963,16 @@ const styles = StyleSheet.create({
   progressText: {
     fontSize: isWeb ? 12 : 11,
     color: 'rgba(255,255,255,0.95)',
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
   },
 
   // Stats Section
   statsSection: {
-    marginHorizontal: isWeb ? 40 : 16,
     marginTop: 16,
   },
   sectionTitle: {
     fontSize: isWeb ? 17 : 16,
-    fontWeight: '800',
+    fontFamily: 'Inter-ExtraBold',
     color: '#133B1C',
     marginBottom: 10,
     letterSpacing: 0.2,
@@ -833,12 +987,12 @@ const styles = StyleSheet.create({
     padding: isWeb ? 16 : 14,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    backgroundColor: 'rgba(255,255,255,0.4)',
+    borderColor: 'rgba(255,255,255,0.82)',
+    backgroundColor: 'rgba(255,255,255,0.62)',
     shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
     elevation: 2,
     overflow: 'hidden',
     position: 'relative',
@@ -861,31 +1015,30 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: isWeb ? 20 : 18,
-    fontWeight: '900',
+    fontFamily: 'Inter-ExtraBold',
     color: '#133B1C',
     marginBottom: 2,
   },
   statLabel: {
     fontSize: isWeb ? 11 : 10,
     color: '#64748B',
-    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
   },
 
   // Tips Section
   tipsSection: {
-    marginHorizontal: isWeb ? 40 : 16,
     marginTop: 16,
   },
   tipsList: {
     borderRadius: 16,
     padding: 6,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    backgroundColor: 'rgba(255,255,255,0.4)',
+    borderColor: 'rgba(255,255,255,0.82)',
+    backgroundColor: 'rgba(255,255,255,0.62)',
     shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
     elevation: 1.5,
   },
   tipItem: {
@@ -912,7 +1065,7 @@ const styles = StyleSheet.create({
   },
   tipTitle: {
     fontSize: isWeb ? 14 : 13,
-    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
     color: '#133B1C',
     marginBottom: 1,
   },
@@ -924,7 +1077,6 @@ const styles = StyleSheet.create({
 
   // Rewards Section
   rewardsSection: {
-    marginHorizontal: isWeb ? 40 : 16,
     marginTop: 16,
   },
   rewardsSubtitle: {
@@ -947,12 +1099,12 @@ const styles = StyleSheet.create({
     padding: isWeb ? 14 : 12,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    backgroundColor: 'rgba(255,255,255,0.4)',
+    borderColor: 'rgba(255,255,255,0.82)',
+    backgroundColor: 'rgba(255,255,255,0.62)',
     shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
     elevation: 1,
   },
   rewardBlurHovered: {
@@ -992,7 +1144,7 @@ const styles = StyleSheet.create({
   },
   rewardName: {
     fontSize: isWeb ? 14 : 13,
-    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
     color: '#133B1C',
   },
   rewardNameDisabled: {
@@ -1022,36 +1174,164 @@ const styles = StyleSheet.create({
   },
   rewardPoints: {
     fontSize: isWeb ? 12 : 11,
-    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
     color: '#4CAF50',
   },
   rewardPointsTextDisabled: {
     color: '#94A3B8',
   },
 
+  // Redeem History
+  redeemHistorySection: {
+    marginTop: 16,
+  },
+  redeemHistoryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  redeemHistoryCount: {
+    marginBottom: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: 'rgba(16,185,129,0.1)',
+    color: '#10B981',
+    fontSize: isWeb ? 11 : 10,
+    fontFamily: 'Inter-Bold',
+  },
+  redeemHistoryCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: isWeb ? 14 : 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.82)',
+    backgroundColor: 'rgba(255,255,255,0.62)',
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
+    elevation: 1,
+    marginBottom: 8,
+    gap: 10,
+    overflow: 'hidden',
+  },
+  redeemHistoryIcon: {
+    width: isWeb ? 42 : 38,
+    height: isWeb ? 42 : 38,
+    borderRadius: isWeb ? 14 : 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(16,185,129,0.1)',
+  },
+  redeemHistoryContent: {
+    flex: 1,
+    minWidth: 0,
+  },
+  redeemHistoryName: {
+    fontSize: isWeb ? 14 : 13,
+    color: '#133B1C',
+    fontFamily: 'Inter-Bold',
+  },
+  redeemHistoryDate: {
+    marginTop: 2,
+    fontSize: isWeb ? 12 : 11,
+    color: '#64748B',
+    fontFamily: 'Inter-Medium',
+  },
+  redeemHistoryPoints: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: 'rgba(239,68,68,0.08)',
+  },
+  redeemHistoryPointsText: {
+    fontSize: isWeb ? 12 : 11,
+    color: '#EF4444',
+    fontFamily: 'Inter-ExtraBold',
+  },
+  redeemHistoryEmpty: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.82)',
+    backgroundColor: 'rgba(255,255,255,0.62)',
+  },
+  redeemHistoryEmptyText: {
+    flex: 1,
+    fontSize: isWeb ? 13 : 12,
+    color: '#64748B',
+    fontFamily: 'Inter-Medium',
+  },
+
   // Footer Tip
   footerTip: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: isWeb ? 40 : 16,
     marginTop: 16,
     marginBottom: 30,
     padding: isWeb ? 14 : 12,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    backgroundColor: 'rgba(255,255,255,0.4)',
+    borderColor: 'rgba(255,255,255,0.82)',
+    backgroundColor: 'rgba(255,255,255,0.62)',
     gap: 8,
     shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
     elevation: 1.5,
   },
   footerTipText: {
     flex: 1,
     fontSize: isWeb ? 12 : 11,
     color: '#133B1C',
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
+  },
+  redeemToast: {
+    position: 'absolute',
+    left: SCREEN_PADDING,
+    right: SCREEN_PADDING,
+    bottom: isWeb ? 112 : 118,
+    zIndex: 80,
+    alignItems: 'center',
+  },
+  redeemToastBlur: {
+    width: '100%',
+    maxWidth: 460,
+    minHeight: 54,
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(255,255,255,0.78)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.86)',
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.14,
+    shadowRadius: 24,
+    elevation: 10,
+    overflow: 'hidden',
+  },
+  redeemToastText: {
+    flex: 1,
+    color: '#133B1C',
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: 'Inter-Bold',
+  },
+  redeemToastTextError: {
+    color: '#B91C1C',
   },
 });

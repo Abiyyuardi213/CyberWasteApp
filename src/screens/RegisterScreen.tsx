@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   Animated,
   Dimensions,
   StatusBar,
@@ -287,11 +286,7 @@ export default function RegisterScreen({ showToast }: RegisterScreenProps) {
         <MaterialCommunityIcons name="leaf" size={22} color="rgba(16, 185, 129, 0.5)" style={styles.ecoIcon} />
       </Animated.View>
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContainer}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={styles.fixedContainer}>
         <Animated.View
           style={[
             styles.contentWrapper,
@@ -530,7 +525,7 @@ export default function RegisterScreen({ showToast }: RegisterScreenProps) {
             </BlurView>
           </View>
         </Animated.View>
-      </ScrollView>
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -539,6 +534,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f0fdf4',
+    overflow: 'hidden',
   },
   background: {
     position: 'absolute',
@@ -623,32 +619,32 @@ const styles = StyleSheet.create({
     bottom: height * 0.24,
     right: width * 0.24,
   },
-  scrollContainer: {
-    flexGrow: 1,
+  fixedContainer: {
+    flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: Platform.OS === 'web' ? Math.min(40, width * 0.08) : 24,
-    paddingVertical: Platform.OS === 'web' ? 60 : 40,
+    paddingHorizontal: Platform.OS === 'web' ? Math.min(24, width * 0.055) : 14,
+    paddingVertical: Platform.OS === 'web' ? 12 : 10,
   },
   contentWrapper: {
     width: '100%',
-    maxWidth: 420,
+    maxWidth: 386,
     alignSelf: 'center',
     zIndex: 2,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 10,
   },
   logoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 6,
     position: 'relative',
   },
   logoGradient: {
-    width: 64,
-    height: 64,
-    borderRadius: 18,
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#22c55e',
@@ -659,29 +655,29 @@ const styles = StyleSheet.create({
   },
   logoBadge: {
     position: 'absolute',
-    right: -8,
-    bottom: -8,
+    right: -7,
+    bottom: -7,
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 12,
-    padding: 4,
+    padding: 3,
     borderWidth: 2,
     borderColor: '#22c55e',
   },
   appName: {
-    fontSize: Platform.OS === 'web' ? 32 : 28,
-    fontWeight: '800',
+    fontSize: Platform.OS === 'web' ? 28 : 24,
+    fontFamily: 'Inter-ExtraBold',
     color: '#0f172a',
     letterSpacing: 1.5,
     marginBottom: 4,
   },
   appSubtitle: {
-    fontSize: 13,
+    fontSize: 11,
     color: '#475569',
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
     letterSpacing: 0.5,
   },
   cardShadowWrapper: {
-    borderRadius: 28,
+    borderRadius: 20,
     shadowColor: '#0f172a',
     shadowOffset: { width: 0, height: 16 },
     shadowOpacity: 0.12,
@@ -690,8 +686,8 @@ const styles = StyleSheet.create({
     zIndex: 3,
   },
   card: {
-    borderRadius: 28,
-    padding: Platform.OS === 'web' ? 32 : 24,
+    borderRadius: 20,
+    padding: Platform.OS === 'web' ? 20 : 16,
     overflow: 'hidden',
     backgroundColor: 'rgba(255, 255, 255, 0.55)',
     borderWidth: 1,
@@ -706,34 +702,34 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
   },
   cardTitle: {
-    fontSize: Platform.OS === 'web' ? 24 : 22,
-    fontWeight: '700',
+    fontSize: Platform.OS === 'web' ? 21 : 19,
+    fontFamily: 'Inter-Bold',
     color: '#0f172a',
     marginBottom: 4,
   },
   cardSubtitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#475569',
-    marginBottom: 28,
+    marginBottom: 12,
   },
   inputWrapper: {
-    marginBottom: 18,
+    marginBottom: 8,
   },
   inputLabel: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
     color: '#0f172a',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
-    borderRadius: 14,
+    borderRadius: 12,
     borderWidth: 1.5,
     borderColor: 'rgba(226, 232, 240, 0.8)',
-    paddingHorizontal: 16,
-    height: Platform.OS === 'web' ? 52 : 56,
+    paddingHorizontal: 12,
+    height: Platform.OS === 'web' ? 44 : 46,
   },
   inputContainerFocused: {
     borderColor: '#22c55e',
@@ -745,26 +741,28 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   inputIcon: {
-    marginRight: 12,
+    marginRight: 9,
   },
   input: {
     flex: 1,
     color: '#0f172a',
-    fontSize: Platform.OS === 'web' ? 15 : 16,
-    fontWeight: '500',
+    fontSize: Platform.OS === 'web' ? 13 : 14,
+    fontFamily: 'Inter-Medium',
     paddingVertical: Platform.OS === 'ios' ? 12 : 0,
+    outlineStyle: 'none' as any,
+    outlineWidth: 0 as any,
   },
   inputWithPadding: {
-    paddingRight: 48,
+    paddingRight: 40,
   },
   eyeIcon: {
     position: 'absolute',
-    right: 16,
+    right: 12,
     padding: 4,
   },
   buttonWrapper: {
     position: 'relative',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   buttonGlow: {
     position: 'absolute',
@@ -772,12 +770,12 @@ const styles = StyleSheet.create({
     left: -6,
     right: -6,
     bottom: -6,
-    borderRadius: 20,
+    borderRadius: 16,
     backgroundColor: '#22c55e',
   },
   primaryButton: {
-    borderRadius: 14,
-    height: Platform.OS === 'web' ? 52 : 56,
+    borderRadius: 12,
+    height: Platform.OS === 'web' ? 46 : 48,
     overflow: 'hidden',
     shadowColor: '#22c55e',
     shadowOffset: { width: 0, height: 4 },
@@ -798,8 +796,8 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 15,
+    fontFamily: 'Inter-Bold',
     letterSpacing: 0.5,
   },
   buttonIcon: {
@@ -808,7 +806,7 @@ const styles = StyleSheet.create({
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 24,
+    marginVertical: 12,
   },
   divider: {
     flex: 1,
@@ -819,7 +817,7 @@ const styles = StyleSheet.create({
     color: '#64748b',
     fontSize: 13,
     paddingHorizontal: 16,
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
   },
   footer: {
     flexDirection: 'row',
@@ -828,12 +826,12 @@ const styles = StyleSheet.create({
   },
   footerText: {
     color: '#475569',
-    fontSize: 14,
+    fontSize: 13,
   },
   footerLink: {
     color: '#16a34a',
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 13,
+    fontFamily: 'Inter-Bold',
     marginLeft: 6,
   },
 });

@@ -19,9 +19,20 @@ export interface Reward {
   available: boolean;
 }
 
+export interface RedeemHistoryItem {
+  id: string;
+  rewardId: number;
+  rewardName: string;
+  rewardDescription: string;
+  icon: string;
+  points: number;
+  redeemedAt: string;
+}
+
 interface EcoPointState {
   userPoints: UserPoints;
   rewards: Reward[];
+  redeemHistory: RedeemHistoryItem[];
   redeemingId: number | null;
   loading: boolean;
   error: string | null;
@@ -31,6 +42,7 @@ interface EcoPointResponse {
   success: boolean;
   userPoints: UserPoints;
   rewards: Reward[];
+  redeemHistory?: RedeemHistoryItem[];
 }
 
 interface RedeemRewardResponse {
@@ -127,6 +139,7 @@ const initialState: EcoPointState = {
       available: false,
     },
   ],
+  redeemHistory: [],
   redeemingId: null,
   loading: false,
   error: null,
@@ -228,6 +241,7 @@ const ecoPointSlice = createSlice({
         state.loading = false;
         state.userPoints = action.payload.userPoints;
         state.rewards = action.payload.rewards;
+        state.redeemHistory = action.payload.redeemHistory || [];
       })
       .addCase(fetchEcoPointData.rejected, (state, action) => {
         state.loading = false;

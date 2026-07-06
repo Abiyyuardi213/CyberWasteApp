@@ -19,9 +19,12 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
+import { fetchEcoPointData } from '../store/ecoPointSlice';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
 
 const { width, height } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
+const SCREEN_PADDING = 10;
 
 // ============ COLOR CONFIG ============
 const COLORS = {
@@ -481,8 +484,10 @@ const UserCard = ({ user, t }: { user: any; t: any }) => {
 
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
-  const { user, logout } = useAuth();
+  const { user, token, logout } = useAuth();
   const { t } = useLanguage();
+  const dispatch = useAppDispatch();
+  const { userPoints } = useAppSelector((state) => state.ecoPoint);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const logoutScale = useRef(new Animated.Value(1)).current;
   const logoutFade = useRef(new Animated.Value(1)).current;
@@ -491,17 +496,19 @@ export default function ProfileScreen() {
   useFocusEffect(
     React.useCallback(() => {
       console.log('✅ ProfileScreen focused - Halaman Profil aktif');
-      // JANGAN ADA navigation.navigate DI SINI!
+      if (token) {
+        dispatch(fetchEcoPointData(token));
+      }
       return () => {
         console.log('❌ ProfileScreen unfocused');
       };
-    }, [])
+    }, [dispatch, token])
   );
 
   const stats = {
-    totalScan: 24,
-    ecoPoints: 150,
-    treesSaved: 2,
+    totalScan: userPoints.itemsRecycled,
+    ecoPoints: userPoints.totalPoints,
+    treesSaved: Math.floor(userPoints.itemsRecycled / 10),
   };
 
   const menuItems = [
@@ -606,10 +613,10 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f0fdf4" />
+      <StatusBar barStyle="dark-content" backgroundColor="#EEFDF3" />
       
       <LinearGradient
-        colors={['#f0fdf4', '#dcfce7', '#eef2ff']}
+        colors={['#dcfce7', '#f0fdf4', '#eff6ff'] as const}
         style={styles.backgroundGradient}
       />
 
@@ -721,7 +728,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f0fdf4',
+    backgroundColor: '#F6FBF7',
   },
   backgroundGradient: {
     position: 'absolute',
@@ -734,7 +741,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContainer: {
-    paddingBottom: isWeb ? 120 : 90,
+    paddingBottom: isWeb ? 150 : 128,
   },
 
   // Background Decorations
@@ -780,14 +787,14 @@ const styles = StyleSheet.create({
 
   // Header
   headerSection: {
-    marginHorizontal: isWeb ? 40 : 20,
+    marginHorizontal: SCREEN_PADDING,
     marginTop: isWeb ? 20 : 12,
     marginBottom: 12,
     padding: isWeb ? 24 : 16,
-    borderRadius: 24,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    borderColor: 'rgba(255,255,255,0.82)',
+    backgroundColor: 'rgba(255,255,255,0.62)',
     shadowColor: '#0f172a',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
@@ -816,44 +823,44 @@ const styles = StyleSheet.create({
   },
   headerBadgeText: {
     fontSize: isWeb ? 12 : 11,
-    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
     color: '#B8860B',
   },
   headerTitle: {
     fontSize: isWeb ? 28 : 24,
-    fontWeight: '800',
+    fontFamily: 'Inter-ExtraBold',
     color: '#133B1C',
     textAlign: 'center',
-    letterSpacing: 0.3,
+    letterSpacing: 0,
   },
   headerSubtitle: {
     fontSize: isWeb ? 14 : 13,
     color: '#64748B',
     marginTop: 2,
     textAlign: 'center',
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
   },
 
   // Section Title
   sectionTitle: {
     fontSize: isWeb ? 18 : 16,
-    fontWeight: '800',
+    fontFamily: 'Inter-ExtraBold',
     color: '#133B1C',
-    marginHorizontal: isWeb ? 40 : 20,
+    marginHorizontal: SCREEN_PADDING,
     marginTop: 20,
     marginBottom: 12,
-    letterSpacing: 0.2,
+    letterSpacing: 0,
   },
 
   // User Card
   userCardWrapper: {
-    marginHorizontal: isWeb ? 40 : 20,
+    marginHorizontal: SCREEN_PADDING,
     marginTop: 4,
     marginBottom: 8,
-    borderRadius: 28,
+    borderRadius: 18,
   },
   userCard: {
-    borderRadius: 28,
+    borderRadius: 18,
     overflow: 'hidden',
   },
   userCardHovered: {
@@ -861,10 +868,10 @@ const styles = StyleSheet.create({
   },
   userCardBlur: {
     padding: isWeb ? 28 : 22,
-    borderRadius: 28,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    backgroundColor: 'rgba(255,255,255,0.4)',
+    borderColor: 'rgba(255,255,255,0.82)',
+    backgroundColor: 'rgba(255,255,255,0.62)',
     shadowColor: '#0f172a',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
@@ -918,7 +925,7 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontSize: 36,
-    fontWeight: '800',
+    fontFamily: 'Inter-ExtraBold',
     color: '#FFFFFF',
   },
   onlineBadge: {
@@ -934,7 +941,7 @@ const styles = StyleSheet.create({
   },
   username: {
     fontSize: isWeb ? 22 : 20,
-    fontWeight: '800',
+    fontFamily: 'Inter-ExtraBold',
     color: '#133B1C',
     marginBottom: 4,
   },
@@ -960,7 +967,7 @@ const styles = StyleSheet.create({
   },
   userCardBadgeText: {
     fontSize: isWeb ? 12 : 11,
-    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
     color: '#4CAF50',
   },
 
@@ -968,12 +975,12 @@ const styles = StyleSheet.create({
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginHorizontal: isWeb ? 40 : 20,
+    marginHorizontal: SCREEN_PADDING,
     paddingVertical: 12,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    backgroundColor: 'rgba(255,255,255,0.4)',
+    borderColor: 'rgba(255,255,255,0.82)',
+    backgroundColor: 'rgba(255,255,255,0.62)',
     shadowColor: '#0f172a',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.03,
@@ -1013,7 +1020,7 @@ const styles = StyleSheet.create({
   statIconWrapper: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
@@ -1028,7 +1035,7 @@ const styles = StyleSheet.create({
   },
   statNumber: {
     fontSize: isWeb ? 22 : 20,
-    fontWeight: '800',
+    fontFamily: 'Inter-ExtraBold',
     color: '#133B1C',
     marginBottom: 2,
   },
@@ -1038,7 +1045,7 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: isWeb ? 11 : 10,
     color: '#64748B',
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
   },
   statLabelHovered: {
     color: '#4CAF50',
@@ -1052,12 +1059,12 @@ const styles = StyleSheet.create({
 
   // Menu Container
   menuContainer: {
-    marginHorizontal: isWeb ? 40 : 20,
+    marginHorizontal: SCREEN_PADDING,
     borderRadius: 20,
     paddingVertical: 4,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    backgroundColor: 'rgba(255,255,255,0.4)',
+    borderColor: 'rgba(255,255,255,0.82)',
+    backgroundColor: 'rgba(255,255,255,0.62)',
     shadowColor: '#0f172a',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.03,
@@ -1127,7 +1134,7 @@ const styles = StyleSheet.create({
   },
   menuItemTitle: {
     fontSize: isWeb ? 15 : 14,
-    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
     color: '#133B1C',
   },
   menuItemTitlePressed: {
@@ -1148,7 +1155,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FEF2F2',
-    marginHorizontal: isWeb ? 40 : 20,
+    marginHorizontal: SCREEN_PADDING,
     marginTop: 24,
     marginBottom: 16,
     paddingVertical: 16,
@@ -1167,7 +1174,7 @@ const styles = StyleSheet.create({
   logoutText: {
     color: '#EF4444',
     fontSize: isWeb ? 15 : 14,
-    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
     marginLeft: 8,
   },
 

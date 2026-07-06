@@ -21,10 +21,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { API_URL } from '../../config';
 import { useAuth } from '../context/AuthContext';
-import { addScanPoints } from '../store/ecoPointSlice';
-import { useAppDispatch } from '../store/hooks';
+import { addScanPoints, fetchEcoPointData } from '../store/ecoPointSlice';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
 
 const { width, height } = Dimensions.get('window');
+const isWeb = Platform.OS === 'web';
 
 interface Prediction {
   label: string;
@@ -39,6 +40,7 @@ import bgImage from '../../assets/images/Walpp3.png';
 export default function ScanScreen() {
   const cameraRef = useRef<CameraView>(null);
   const dispatch = useAppDispatch();
+  const { userPoints } = useAppSelector((state) => state.ecoPoint);
   const { token } = useAuth();
   const [permission, requestPermission] = useCameraPermissions();
   const [photoUri, setPhotoUri] = useState<string | null>(null);
@@ -57,6 +59,12 @@ export default function ScanScreen() {
       Animated.timing(slideAnim, { toValue: 0, duration: 450, useNativeDriver: true }),
     ]).start();
   }, []);
+
+  useEffect(() => {
+    if (token) {
+      dispatch(fetchEcoPointData(token));
+    }
+  }, [dispatch, token]);
 
   const takePhoto = async () => {
     if (!cameraRef.current || loading || !cameraActive) return;
@@ -172,7 +180,8 @@ export default function ScanScreen() {
     );
   }
 
-  const cameraSize = Math.min(width - 80, 280);
+  const scanSessionActive = loading || !!photoUri || !!prediction || !!scanError;
+  const cameraSize = scanSessionActive ? Math.min(width - 120, 210) : Math.min(width - 80, 280);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -188,8 +197,9 @@ export default function ScanScreen() {
 
       <ScrollView
         style={styles.container}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, scanSessionActive && styles.scrollContentCompact]}
         showsVerticalScrollIndicator={false}
+        scrollEnabled={!scanSessionActive}
       >
         <Animated.View
           style={{
@@ -200,7 +210,7 @@ export default function ScanScreen() {
           {/* ===== AREA ATAS: BACKGROUND WALPP ===== */}
           <ImageBackground
             source={bgImage}
-            style={styles.topAreaBg}
+            style={[styles.topAreaBg, scanSessionActive && styles.topAreaBgCompact]}
             imageStyle={styles.topAreaBgStyle}
             resizeMode="cover"
           >
@@ -208,11 +218,13 @@ export default function ScanScreen() {
             <View style={styles.topAreaOverlay} />
 
             {/* ===== HEADER ===== */}
-            <BlurView intensity={30} tint="dark" style={styles.headerCard}>
+            <BlurView intensity={30} tint="dark" style={[styles.headerCard, scanSessionActive && styles.headerCardCompact]}>
               <View style={styles.headerContent}>
-                <View>
+                <View style={styles.headerTextBlock}>
                   <Text style={styles.headerTitle}>📸 Scan Sampah</Text>
-                  <Text style={styles.headerSubtitle}>Ambil foto, lalu AI akan mengenali jenis sampah dengan akurasi tinggi.</Text>
+                  {!scanSessionActive && (
+                    <Text style={styles.headerSubtitle}>Ambil foto, lalu AI akan mengenali jenis sampah dengan akurasi tinggi.</Text>
+                  )}
                 </View>
                 <View style={styles.headerBadge}>
                   <View style={styles.headerBadgeDot} />
@@ -267,47 +279,48 @@ export default function ScanScreen() {
 
           {/* ===== AREA BAWAH: BACKGROUND POLOS ===== */}
           
-          {/* BARIS 1: Eco Points */}
-          <BlurView intensity={35} tint="light" style={styles.infoRow}>
-            <View style={styles.infoRowLeft}>
-              <LinearGradient
-                colors={['#22c55e', '#16a34a'] as const}
-                style={styles.infoRowIcon}
-              >
-                <MaterialCommunityIcons name="leaf" size={24} color="#FFFFFF" />
-              </LinearGradient>
-              <View style={styles.infoRowText}>
-                <Text style={styles.infoRowLabel}>Eco Points</Text>
-                <Text style={styles.infoRowValue}>1.500</Text>
+          {!scanSessionActive && (
+          <View style={styles.statsGrid}>
+            {/* BARIS 1: Eco Points */}
+            <BlurView intensity={30} tint="light" style={styles.infoRow}>
+              <View style={styles.infoRowTop}>
+                <LinearGradient
+                  colors={['#22c55e', '#16a34a'] as const}
+                  style={styles.infoRowIcon}
+                >
+                  <MaterialCommunityIcons name="leaf" size={22} color="#FFFFFF" />
+                </LinearGradient>
+                <View style={styles.infoRowBadge}>
+                  <Ionicons name="trending-up" size={14} color="#10B981" />
+                  <Text style={styles.infoRowBadgeText}>+12</Text>
+                </View>
               </View>
-            </View>
-            <View style={styles.infoRowBadge}>
-              <Ionicons name="trending-up" size={16} color="#10B981" />
-              <Text style={styles.infoRowBadgeText}>+12 hari ini</Text>
-            </View>
-          </BlurView>
+              <Text style={styles.infoRowLabel}>Eco Points</Text>
+              <Text style={styles.infoRowValue}>{userPoints.totalPoints.toLocaleString('id-ID')}</Text>
+            </BlurView>
 
-          {/* BARIS 2: Scan Hari Ini */}
-          <BlurView intensity={35} tint="light" style={styles.infoRow}>
-            <View style={styles.infoRowLeft}>
-              <LinearGradient
-                colors={['#3B82F6', '#2563EB'] as const}
-                style={styles.infoRowIcon}
-              >
-                <Ionicons name="scan-outline" size={24} color="#FFFFFF" />
-              </LinearGradient>
-              <View style={styles.infoRowText}>
-                <Text style={styles.infoRowLabel}>Scan Hari Ini</Text>
-                <Text style={styles.infoRowValue}>47 Sampah</Text>
+            {/* BARIS 2: Scan Hari Ini */}
+            <BlurView intensity={30} tint="light" style={styles.infoRow}>
+              <View style={styles.infoRowTop}>
+                <LinearGradient
+                  colors={['#3B82F6', '#2563EB'] as const}
+                  style={styles.infoRowIcon}
+                >
+                  <Ionicons name="scan-outline" size={22} color="#FFFFFF" />
+                </LinearGradient>
+                <View style={[styles.infoRowBadge, { backgroundColor: 'rgba(59,130,246,0.1)' }]}>
+                  <Ionicons name="calendar-outline" size={14} color="#3B82F6" />
+                  <Text style={[styles.infoRowBadgeText, { color: '#3B82F6' }]}>Hari ini</Text>
+                </View>
               </View>
-            </View>
-            <View style={[styles.infoRowBadge, { backgroundColor: 'rgba(59,130,246,0.1)' }]}>
-              <Ionicons name="calendar-outline" size={16} color="#3B82F6" />
-              <Text style={[styles.infoRowBadgeText, { color: '#3B82F6' }]}>Hari ini</Text>
-            </View>
-          </BlurView>
+              <Text style={styles.infoRowLabel}>Scan Hari Ini</Text>
+              <Text style={styles.infoRowValue}>{userPoints.itemsRecycled}</Text>
+            </BlurView>
+          </View>
+          )}
 
           {/* BARIS 3: Tips Scan */}
+          {!scanSessionActive && (
           <BlurView intensity={35} tint="light" style={styles.tipsRow}>
             <Text style={styles.tipsRowTitle}>💡 Tips Scan</Text>
             <View style={styles.tipsRowContent}>
@@ -325,6 +338,7 @@ export default function ScanScreen() {
               </View>
             </View>
           </BlurView>
+          )}
 
           {/* Loading, Error, Result, Actions */}
           {loading && (
@@ -375,69 +389,72 @@ export default function ScanScreen() {
             </BlurView>
           )}
 
-          <View style={styles.actions}>
-            {photoUri ? (
-              <TouchableOpacity
-                style={styles.secondaryButton}
-                onPress={() => {
-                  setPhotoUri(null);
-                  setPrediction(null);
-                  setScanError(null);
-                  setCameraActive(true);
-                }}
-                disabled={loading}
-                activeOpacity={0.8}
-              >
-                <BlurView intensity={30} tint="light" style={styles.secondaryButtonBlur}>
-                  <Ionicons name="refresh-outline" size={20} color="#10B981" />
-                  <Text style={styles.secondaryButtonText}>Foto Ulang</Text>
-                </BlurView>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                style={styles.secondaryButton}
-                onPress={() => setCameraActive((current) => !current)}
-                disabled={loading}
-                activeOpacity={0.8}
-              >
-                <BlurView intensity={30} tint="light" style={styles.secondaryButtonBlur}>
-                  <Ionicons
-                    name={cameraActive ? 'stop-circle-outline' : 'camera-outline'}
-                    size={20}
-                    color={cameraActive ? '#EF4444' : '#10B981'}
-                  />
-                  <Text style={[styles.secondaryButtonText, cameraActive && styles.stopButtonText]}>
-                    {cameraActive ? 'Stop Scan' : 'Nyalakan Kamera'}
-                  </Text>
-                </BlurView>
-              </TouchableOpacity>
-            )}
-
-            <TouchableOpacity
-              style={[styles.scanButton, (!!photoUri || loading || !cameraActive) && styles.scanButtonDisabled]}
-              onPress={takePhoto}
-              disabled={loading || !!photoUri || !cameraActive}
-              activeOpacity={0.8}
-            >
-              <LinearGradient
-                colors={['#22c55e', '#16a34a'] as const}
-                style={styles.scanButtonGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <>
-                    <Ionicons name="camera-outline" size={22} color="#FFFFFF" />
-                    <Text style={styles.scanButtonText}>Scan Sekarang</Text>
-                  </>
-                )}
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
         </Animated.View>
       </ScrollView>
+
+      <View style={styles.actions}>
+        {photoUri ? (
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={() => {
+              setPhotoUri(null);
+              setPrediction(null);
+              setScanError(null);
+              setCameraActive(true);
+            }}
+            disabled={loading}
+            activeOpacity={0.8}
+          >
+            <BlurView intensity={30} tint="light" style={styles.secondaryButtonBlur}>
+              <Ionicons name="refresh-outline" size={20} color="#10B981" />
+              <Text style={styles.secondaryButtonText}>Foto Ulang</Text>
+            </BlurView>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={() => setCameraActive((current) => !current)}
+            disabled={loading}
+            activeOpacity={0.8}
+          >
+            <BlurView intensity={30} tint="light" style={styles.secondaryButtonBlur}>
+              <Ionicons
+                name={cameraActive ? 'stop-circle-outline' : 'camera-outline'}
+                size={20}
+                color={cameraActive ? '#EF4444' : '#10B981'}
+              />
+              <Text style={[styles.secondaryButtonText, cameraActive && styles.stopButtonText]}>
+                {cameraActive ? 'Stop Scan' : 'Nyalakan Kamera'}
+              </Text>
+            </BlurView>
+          </TouchableOpacity>
+        )}
+
+        {!photoUri && (
+          <TouchableOpacity
+            style={[styles.scanButton, (loading || !cameraActive) && styles.scanButtonDisabled]}
+            onPress={takePhoto}
+            disabled={loading || !cameraActive}
+            activeOpacity={0.8}
+          >
+            <LinearGradient
+              colors={['#22c55e', '#16a34a'] as const}
+              style={styles.scanButtonGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <>
+                  <Ionicons name="camera-outline" size={22} color="#FFFFFF" />
+                  <Text style={styles.scanButtonText}>Scan Sekarang</Text>
+                </>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
+      </View>
     </SafeAreaView>
   );
 }
@@ -445,7 +462,7 @@ export default function ScanScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#eefdf3',
+    backgroundColor: '#F6FBF7',
   },
   background: {
     position: 'absolute',
@@ -458,14 +475,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 130,
-    paddingHorizontal: 16,
+    paddingBottom: 232,
+    paddingHorizontal: 10,
+  },
+  scrollContentCompact: {
+    paddingBottom: 150,
   },
   centerContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#eefdf3',
+    backgroundColor: '#F6FBF7',
   },
 
   // Permission
@@ -488,7 +508,7 @@ const styles = StyleSheet.create({
   permissionTitle: {
     marginTop: 18,
     fontSize: 22,
-    fontWeight: '800',
+    fontFamily: 'Inter-ExtraBold',
     color: '#133B1C',
     textAlign: 'center',
   },
@@ -520,21 +540,26 @@ const styles = StyleSheet.create({
   permissionButtonText: {
     color: '#FFFFFF',
     fontSize: 15,
-    fontWeight: '800',
+    fontFamily: 'Inter-ExtraBold',
   },
 
   // ===== AREA ATAS =====
   topAreaBg: {
-    width: width - 32,
-    borderRadius: 24,
+    width: width - 20,
+    maxWidth: 760,
+    borderRadius: 22,
     overflow: 'hidden',
-    marginTop: 8,
-    marginBottom: 8,
+    marginTop: 10,
+    marginBottom: 12,
     alignSelf: 'center',
     paddingHorizontal: 0,
   },
+  topAreaBgCompact: {
+    marginTop: 8,
+    marginBottom: 8,
+  },
   topAreaBgStyle: {
-    borderRadius: 24,
+    borderRadius: 22,
   },
   topAreaOverlay: {
     position: 'absolute',
@@ -542,53 +567,66 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.25)',
-    borderRadius: 24,
+    backgroundColor: 'rgba(0,0,0,0.12)',
+    borderRadius: 22,
   },
 
   // Header
   headerCard: {
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    borderRadius: 20,
-    padding: 16,
+    backgroundColor: 'rgba(9, 55, 27, 0.44)',
+    borderRadius: 18,
+    padding: 14,
     marginTop: 16,
-    marginHorizontal: 16,
-    marginBottom: 8,
+    marginHorizontal: 14,
+    marginBottom: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
+    borderColor: 'rgba(255,255,255,0.28)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
     elevation: 3,
+  },
+  headerCardCompact: {
+    padding: 12,
+    marginTop: 12,
+    marginBottom: 6,
   },
   headerContent: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  headerTextBlock: {
+    flex: 1,
+    minWidth: 0,
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: '800',
+    fontSize: width < 380 ? 20 : 22,
+    fontFamily: 'Inter-ExtraBold',
     color: '#FFFFFF',
+    lineHeight: width < 380 ? 25 : 28,
   },
   headerSubtitle: {
-    fontSize: 12,
+    fontSize: width < 380 ? 11 : 12,
     color: 'rgba(255,255,255,0.8)',
     marginTop: 4,
     lineHeight: 17,
-    maxWidth: width - 140,
+    maxWidth: '100%',
   },
   headerBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(16,185,129,0.2)',
-    paddingHorizontal: 10,
+    alignSelf: 'flex-start',
+    flexShrink: 0,
+    maxWidth: 88,
+    backgroundColor: 'rgba(16,185,129,0.18)',
+    paddingHorizontal: 8,
     paddingVertical: 5,
     borderRadius: 12,
     gap: 4,
     borderWidth: 1,
-    borderColor: 'rgba(16,185,129,0.2)',
+    borderColor: 'rgba(16,185,129,0.32)',
   },
   headerBadgeDot: {
     width: 6,
@@ -598,17 +636,18 @@ const styles = StyleSheet.create({
   },
   headerBadgeText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
     color: '#10B981',
-    letterSpacing: 0.5,
+    letterSpacing: 0,
   },
 
   // Camera
   cameraSection: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 8,
-    paddingBottom: 16,
+    marginTop: 4,
+    marginBottom: 10,
+    paddingBottom: 18,
   },
   cameraWrapper: {
     alignItems: 'center',
@@ -616,20 +655,20 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   cameraOuterRing: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    padding: 6,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    padding: 5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
+    shadowOpacity: 0.18,
+    shadowRadius: 18,
     elevation: 5,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    borderColor: 'rgba(255,255,255,0.34)',
   },
   cameraMiddleRing: {
     width: '100%',
     height: '100%',
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.12)',
     padding: 4,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
@@ -662,7 +701,7 @@ const styles = StyleSheet.create({
   cameraStoppedTitle: {
     marginTop: 10,
     fontSize: 16,
-    fontWeight: '800',
+    fontFamily: 'Inter-ExtraBold',
     color: '#FFFFFF',
   },
   cameraStoppedText: {
@@ -740,17 +779,17 @@ const styles = StyleSheet.create({
   // Camera Status Badge
   cameraStatusBadge: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: 4,
+    right: 4,
     borderRadius: 10,
     overflow: 'hidden',
   },
   cameraStatusBlur: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    backgroundColor: 'rgba(6, 78, 59, 0.58)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
     borderRadius: 10,
@@ -767,7 +806,7 @@ const styles = StyleSheet.create({
   },
   cameraStatusText: {
     fontSize: 9,
-    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
     color: '#FFFFFF',
     letterSpacing: 0.5,
   },
@@ -776,90 +815,95 @@ const styles = StyleSheet.create({
   },
 
   // ===== AREA BAWAH =====
+  statsGrid: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 2,
+  },
   infoRow: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.68)',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.78)',
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 14,
+    elevation: 2,
+    overflow: 'hidden',
+  },
+  infoRowTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(255,255,255,0.5)',
-    borderRadius: 16,
-    padding: 14,
-    marginTop: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  infoRowLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    marginBottom: 12,
   },
   infoRowIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 42,
+    height: 42,
+    borderRadius: 13,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  infoRowText: {
-    justifyContent: 'center',
   },
   infoRowLabel: {
     fontSize: 12,
     color: '#64748B',
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
+    marginBottom: 2,
   },
   infoRowValue: {
-    fontSize: 20,
-    fontWeight: '800',
+    fontSize: 21,
+    fontFamily: 'Inter-ExtraBold',
     color: '#133B1C',
+    lineHeight: 25,
   },
   infoRowBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(16,185,129,0.1)',
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
     gap: 4,
   },
   infoRowBadgeText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#10B981',
-    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
   },
 
   tipsRow: {
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    backgroundColor: 'rgba(255,255,255,0.68)',
     borderRadius: 16,
     padding: 14,
     marginTop: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: 'rgba(255,255,255,0.78)',
     shadowColor: '#0f172a',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
+    shadowOpacity: 0.05,
+    shadowRadius: 14,
     elevation: 2,
   },
   tipsRowTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
     color: '#133B1C',
     marginBottom: 10,
   },
   tipsRowContent: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   tipItemHorizontal: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    flex: 1,
+    flexGrow: 1,
+    minWidth: '30%',
   },
   tipDotHorizontal: {
     width: 5,
@@ -868,27 +912,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#10B981',
   },
   tipTextHorizontal: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#64748B',
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
   },
 
   statusCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    backgroundColor: 'rgba(255,255,255,0.68)',
     marginTop: 14,
     padding: 14,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: 'rgba(255,255,255,0.78)',
     gap: 10,
   },
   statusText: {
     flex: 1,
     fontSize: 13,
     color: '#047857',
-    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
   },
   errorCard: {
     backgroundColor: 'rgba(254, 242, 242, 0.7)',
@@ -902,16 +946,16 @@ const styles = StyleSheet.create({
   },
 
   resultCard: {
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    backgroundColor: 'rgba(255,255,255,0.72)',
     marginTop: 16,
     padding: 16,
-    borderRadius: 20,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: 'rgba(255,255,255,0.82)',
     shadowColor: '#0f172a',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
     elevation: 3,
   },
   resultHeader: {
@@ -932,7 +976,7 @@ const styles = StyleSheet.create({
   },
   resultLabel: {
     fontSize: 17,
-    fontWeight: '800',
+    fontFamily: 'Inter-ExtraBold',
     color: '#0F172A',
     textTransform: 'capitalize',
   },
@@ -940,7 +984,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontSize: 12,
     color: '#10B981',
-    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
   },
   metricRow: {
     flexDirection: 'row',
@@ -958,7 +1002,7 @@ const styles = StyleSheet.create({
   },
   metricValue: {
     fontSize: 20,
-    fontWeight: '900',
+    fontFamily: 'Inter-ExtraBold',
     color: '#047857',
   },
   metricLabel: {
@@ -968,11 +1012,15 @@ const styles = StyleSheet.create({
   },
 
   actions: {
-    paddingTop: 16,
+    position: 'absolute',
+    left: 10,
+    right: 10,
+    bottom: isWeb ? 102 : 106,
     gap: 10,
+    zIndex: 50,
   },
   scanButton: {
-    borderRadius: 18,
+    borderRadius: 14,
     overflow: 'hidden',
     shadowColor: '#16a34a',
     shadowOffset: { width: 0, height: 6 },
@@ -993,10 +1041,10 @@ const styles = StyleSheet.create({
   scanButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '800',
+    fontFamily: 'Inter-ExtraBold',
   },
   secondaryButton: {
-    borderRadius: 16,
+    borderRadius: 14,
     overflow: 'hidden',
   },
   secondaryButtonBlur: {
@@ -1005,14 +1053,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     height: 48,
     gap: 8,
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    backgroundColor: 'rgba(255,255,255,0.68)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: 'rgba(255,255,255,0.78)',
   },
   secondaryButtonText: {
     color: '#10B981',
     fontSize: 14,
-    fontWeight: '800',
+    fontFamily: 'Inter-ExtraBold',
   },
   stopButtonText: {
     color: '#EF4444',

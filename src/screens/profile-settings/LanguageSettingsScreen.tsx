@@ -24,6 +24,7 @@ import { useNavigation } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
+const SCREEN_PADDING = 10;
 
 // Fade In Animation
 const FadeInSection = ({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) => {
@@ -199,10 +200,10 @@ export default function LanguageSettingsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f0fdf4" />
+      <StatusBar barStyle="dark-content" backgroundColor="#EEFDF3" />
       
       <LinearGradient
-        colors={['#f0fdf4', '#dcfce7', '#eef2ff']}
+        colors={['#dcfce7', '#f0fdf4', '#eff6ff'] as const}
         style={styles.backgroundGradient}
       />
 
@@ -290,7 +291,7 @@ export default function LanguageSettingsScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f0fdf4',
+    backgroundColor: '#F6FBF7',
   },
   backgroundGradient: {
     position: 'absolute',
@@ -304,7 +305,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: isWeb ? 120 : 90,
+    paddingBottom: isWeb ? 150 : 128,
     paddingTop: 8,
   },
 
@@ -342,13 +343,13 @@ const styles = StyleSheet.create({
 
   // Header
   headerSection: {
-    marginHorizontal: isWeb ? 40 : 16,
+    marginHorizontal: SCREEN_PADDING,
     marginBottom: 16,
     padding: isWeb ? 24 : 16,
-    borderRadius: 24,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    borderColor: 'rgba(255,255,255,0.82)',
+    backgroundColor: 'rgba(255,255,255,0.62)',
     shadowColor: '#0f172a',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
@@ -372,11 +373,11 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    backgroundColor: 'rgba(255,255,255,0.62)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: 'rgba(255,255,255,0.82)',
   },
   headerContent: {
     alignItems: 'center',
@@ -394,27 +395,27 @@ const styles = StyleSheet.create({
   },
   headerBadgeText: {
     fontSize: isWeb ? 12 : 11,
-    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
     color: '#4CAF50',
   },
   headerTitle: {
     fontSize: isWeb ? 26 : 22,
-    fontWeight: '800',
+    fontFamily: 'Inter-ExtraBold',
     color: '#133B1C',
     textAlign: 'center',
-    letterSpacing: 0.3,
+    letterSpacing: 0,
   },
   headerSubtitle: {
     fontSize: isWeb ? 13 : 12,
     color: '#64748B',
     marginTop: 2,
     textAlign: 'center',
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
   },
 
   // Languages Container
   languagesContainer: {
-    marginHorizontal: isWeb ? 40 : 16,
+    marginHorizontal: SCREEN_PADDING,
     gap: 12,
   },
 
@@ -425,8 +426,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    backgroundColor: 'rgba(255,255,255,0.4)',
+    borderColor: 'rgba(255,255,255,0.82)',
+    backgroundColor: 'rgba(255,255,255,0.62)',
     shadowColor: '#0f172a',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
@@ -436,15 +437,15 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: isWeb ? 14 : 13,
     color: '#64748B',
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
   },
 
   // Language Option
   languageOption: {
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderColor: 'rgba(255,255,255,0.72)',
+    backgroundColor: 'rgba(255,255,255,0.58)',
     shadowColor: '#0f172a',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.03,
@@ -455,7 +456,7 @@ const styles = StyleSheet.create({
   },
   languageOptionActive: {
     borderColor: 'rgba(76, 175, 80, 0.5)',
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    backgroundColor: 'rgba(255,255,255,0.62)',
     shadowColor: '#4CAF50',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
@@ -499,7 +500,7 @@ const styles = StyleSheet.create({
   },
   optionNativeName: {
     fontSize: isWeb ? 16 : 15,
-    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
     color: '#133B1C',
   },
   optionNativeNameActive: {
@@ -508,7 +509,7 @@ const styles = StyleSheet.create({
   optionName: {
     fontSize: isWeb ? 13 : 12,
     color: '#94A3B8',
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
   },
   optionNameActive: {
     color: '#4CAF50',
@@ -522,18 +523,18 @@ const styles = StyleSheet.create({
   selectedBadgeText: {
     color: '#FFFFFF',
     fontSize: isWeb ? 10 : 9,
-    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
   },
 
   // Info Section
   infoSection: {
-    marginHorizontal: isWeb ? 40 : 16,
+    marginHorizontal: SCREEN_PADDING,
     marginTop: 20,
     padding: isWeb ? 16 : 14,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderColor: 'rgba(255,255,255,0.72)',
+    backgroundColor: 'rgba(255,255,255,0.58)',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -552,6 +553,6 @@ const styles = StyleSheet.create({
     fontSize: isWeb ? 12 : 11,
     color: '#64748B',
     lineHeight: 18,
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
   },
 });

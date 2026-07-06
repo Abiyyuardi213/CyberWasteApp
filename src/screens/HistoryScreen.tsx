@@ -11,6 +11,8 @@ import {
   Dimensions,
   Animated,
   Platform,
+  TouchableOpacity,
+  Modal,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -30,20 +32,13 @@ const isAndroid = Platform.OS === 'android';
 // Web: card BESAR/PANJANG dengan font SEDANG
 // HP: card KECIL/PENDEK dengan font KECIL
 
-// Web: padding dan gap lebih besar
-const GRID_PADDING = isWeb ? 40 : 16;
-const GRID_GAP = isWeb ? 28 : 12;
+// Samakan jarak kanan-kiri dengan halaman Scan.
+const GRID_PADDING = 10;
+const GRID_GAP = 10;
 
 // Hitung lebar card
 const getCardWidth = () => {
-  if (isWeb) {
-    // Web: 2 kolom dengan lebar BESAR
-    const calculated = (width - GRID_PADDING * 2 - GRID_GAP) / 2;
-    return Math.max(calculated, 340);
-  } else {
-    // HP: 2 kolom dengan lebar kecil
-    return (width - GRID_PADDING * 2 - GRID_GAP) / 2;
-  }
+  return (width - GRID_PADDING * 2 - GRID_GAP) / 2;
 };
 
 const CARD_WIDTH = getCardWidth();
@@ -120,8 +115,19 @@ const formatDate = (dateString: string) => {
   });
 };
 
+const formatDateTime = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleString('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
 // ============ GRID CARD ============
-const HistoryGridItem = ({ item }: { item: ScanHistoryItem }) => {
+const HistoryGridItem = ({ item, onPress }: { item: ScanHistoryItem; onPress: () => void }) => {
   const accentColor = getWasteTypeColor(item.wasteType);
   const categoryIcon = getCategoryIcon(item.category);
   const confidencePct = Math.round(item.confidence * 100);
@@ -142,76 +148,90 @@ const HistoryGridItem = ({ item }: { item: ScanHistoryItem }) => {
   const gapSize = isWebSize ? 8 : 6;
 
   return (
-    <BlurView 
-      intensity={isWebSize ? 20 : 30} 
-      tint="light" 
+    <TouchableOpacity
+      activeOpacity={0.86}
+      onPress={onPress}
       style={[
-        styles.gridCard, 
-        { 
+        styles.gridCardTouchable,
+        {
           width: CARD_WIDTH,
           height: CARD_HEIGHT,
-          padding: paddingCard,
           borderRadius: isWebSize ? 22 : 18,
-        }
+        },
       ]}
     >
-      <View style={[styles.gridCardTop, { marginBottom: gapSize }]}>
-        <View style={[styles.gridIconCircle, { 
-          backgroundColor: accentColor + '18',
-          width: iconCircleSize,
-          height: iconCircleSize,
-          borderRadius: isWebSize ? 18 : 16,
+      <BlurView
+        intensity={isWebSize ? 20 : 30}
+        tint="light"
+        style={[
+          styles.gridCard,
+          {
+            width: '100%',
+            height: '100%',
+            padding: paddingCard,
+            borderRadius: isWebSize ? 22 : 18,
+          },
+        ]}
+      >
+        <View style={[styles.gridCardTop, { marginBottom: gapSize }]}>
+          <View style={[styles.gridIconCircle, {
+            backgroundColor: accentColor + '18',
+            width: iconCircleSize,
+            height: iconCircleSize,
+            borderRadius: isWebSize ? 18 : 16,
+          }]}>
+            <MaterialCommunityIcons name={categoryIcon as any} size={iconSize} color={accentColor} />
+          </View>
+          <View style={[styles.gridPointsBadge, {
+            backgroundColor: accentColor + '14',
+            paddingHorizontal: isWebSize ? 12 : 9,
+            paddingVertical: isWebSize ? 5 : 4,
+            borderRadius: isWebSize ? 12 : 10
+          }]}>
+            <Text style={[styles.gridPointsText, { color: accentColor, fontSize: fontSizePoints }]}>+{item.points}</Text>
+          </View>
+        </View>
+
+        <Text style={[styles.gridWasteType, { fontSize: fontSizeTitle, marginBottom: gapSize }]} numberOfLines={1}>
+          {item.wasteType}
+        </Text>
+
+        <View style={[styles.gridCategoryTag, {
+          backgroundColor: accentColor + '10',
+          paddingHorizontal: isWebSize ? 10 : 8,
+          paddingVertical: isWebSize ? 4 : 3,
+          borderRadius: isWebSize ? 10 : 8,
+          gap: isWebSize ? 6 : 5,
+          marginBottom: gapSize
         }]}>
-          <MaterialCommunityIcons name={categoryIcon as any} size={iconSize} color={accentColor} />
+          <View style={[styles.gridCategoryDot, {
+            backgroundColor: accentColor,
+            width: isWebSize ? 6 : 5,
+            height: isWebSize ? 6 : 5,
+            borderRadius: isWebSize ? 3 : 2.5
+          }]} />
+          <Text style={[styles.gridCategoryText, { color: accentColor, fontSize: fontSizeCategory }]}>{item.category}</Text>
         </View>
-        <View style={[styles.gridPointsBadge, { 
-          backgroundColor: accentColor + '14', 
-          paddingHorizontal: isWebSize ? 12 : 9, 
-          paddingVertical: isWebSize ? 5 : 4, 
-          borderRadius: isWebSize ? 12 : 10 
-        }]}>
-          <Text style={[styles.gridPointsText, { color: accentColor, fontSize: fontSizePoints }]}>+{item.points}</Text>
+
+        <View style={[styles.gridConfidenceRow, { gap: isWebSize ? 8 : 6, marginBottom: gapSize }]}>
+          <View style={[styles.gridConfidenceBarBg, { height: barHeight, borderRadius: isWebSize ? 4 : 3 }]}>
+            <View
+              style={[
+                styles.gridConfidenceBarFill,
+                { width: `${confidencePct}%`, backgroundColor: accentColor, borderRadius: isWebSize ? 4 : 3 },
+              ]}
+            />
+          </View>
+          <Text style={[styles.gridConfidenceText, { fontSize: fontSizeConfidence, minWidth: isWebSize ? 34 : 28 }]}>{confidencePct}%</Text>
         </View>
-      </View>
 
-      <Text style={[styles.gridWasteType, { fontSize: fontSizeTitle, marginBottom: gapSize }]} numberOfLines={1}>
-        {item.wasteType}
-      </Text>
-
-      <View style={[styles.gridCategoryTag, { 
-        backgroundColor: accentColor + '10', 
-        paddingHorizontal: isWebSize ? 10 : 8, 
-        paddingVertical: isWebSize ? 4 : 3, 
-        borderRadius: isWebSize ? 10 : 8, 
-        gap: isWebSize ? 6 : 5, 
-        marginBottom: gapSize 
-      }]}>
-        <View style={[styles.gridCategoryDot, { 
-          backgroundColor: accentColor, 
-          width: isWebSize ? 6 : 5, 
-          height: isWebSize ? 6 : 5, 
-          borderRadius: isWebSize ? 3 : 2.5 
-        }]} />
-        <Text style={[styles.gridCategoryText, { color: accentColor, fontSize: fontSizeCategory }]}>{item.category}</Text>
-      </View>
-
-      <View style={[styles.gridConfidenceRow, { gap: isWebSize ? 8 : 6, marginBottom: gapSize }]}>
-        <View style={[styles.gridConfidenceBarBg, { height: barHeight, borderRadius: isWebSize ? 4 : 3 }]}>
-          <View
-            style={[
-              styles.gridConfidenceBarFill,
-              { width: `${confidencePct}%`, backgroundColor: accentColor, borderRadius: isWebSize ? 4 : 3 },
-            ]}
-          />
+        <View style={[styles.gridFooter, { paddingTop: isWebSize ? 8 : 6, gap: isWebSize ? 5 : 4 }]}>
+          <Ionicons name="time-outline" size={isWebSize ? 14 : 11} color="#94A3B8" />
+          <Text style={[styles.gridFooterText, { fontSize: fontSizeFooter }]}>{formatDate(item.date)}</Text>
+          <Ionicons name="chevron-forward" size={isWebSize ? 14 : 11} color="#94A3B8" style={styles.gridDetailIcon} />
         </View>
-        <Text style={[styles.gridConfidenceText, { fontSize: fontSizeConfidence, minWidth: isWebSize ? 34 : 28 }]}>{confidencePct}%</Text>
-      </View>
-
-      <View style={[styles.gridFooter, { paddingTop: isWebSize ? 8 : 6, gap: isWebSize ? 5 : 4 }]}>
-        <Ionicons name="time-outline" size={isWebSize ? 14 : 11} color="#94A3B8" />
-        <Text style={[styles.gridFooterText, { fontSize: fontSizeFooter }]}>{formatDate(item.date)}</Text>
-      </View>
-    </BlurView>
+      </BlurView>
+    </TouchableOpacity>
   );
 };
 
@@ -263,6 +283,7 @@ const DECOR_CONFIGS: DecorConfig[] = [
 export default function HistoryScreen() {
   const { token } = useAuth();
   const [history, setHistory] = useState<ScanHistoryItem[]>([]);
+  const [selectedHistory, setSelectedHistory] = useState<ScanHistoryItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -356,6 +377,8 @@ export default function HistoryScreen() {
   };
 
   const totalPoints = history.reduce((sum, item) => sum + item.points, 0);
+  const selectedAccentColor = selectedHistory ? getWasteTypeColor(selectedHistory.wasteType) : '#10B981';
+  const selectedConfidencePct = selectedHistory ? Math.round(selectedHistory.confidence * 100) : 0;
 
   // Komponen dekorasi mengambang
   const FloatingDecor = () => (
@@ -413,7 +436,7 @@ export default function HistoryScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#eefdf3" />
+      <StatusBar barStyle="dark-content" backgroundColor="#EEFDF3" />
 
       <LinearGradient
         colors={['#dcfce7', '#f0fdf4', '#eff6ff'] as const}
@@ -436,9 +459,10 @@ export default function HistoryScreen() {
       <View style={styles.container}>
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
           {/* Header */}
-          <BlurView intensity={isWeb ? 30 : 40} tint="light" style={styles.header}>
+          <BlurView intensity={isWeb ? 28 : 38} tint="light" style={styles.header}>
             <View style={styles.headerContent}>
-              <Text style={styles.headerTitle}>📋 Riwayat Scan</Text>
+              <Text style={styles.headerEyebrow}>Aktivitas</Text>
+              <Text style={styles.headerTitle}>Riwayat Scan</Text>
               <Text style={styles.headerSubtitle}>
                 {history.length} item terdeteksi
               </Text>
@@ -458,7 +482,7 @@ export default function HistoryScreen() {
           )}
 
           {/* Statistik Ringkas */}
-          <BlurView intensity={isWeb ? 25 : 35} tint="light" style={styles.statsContainer}>
+          <BlurView intensity={isWeb ? 24 : 34} tint="light" style={styles.statsContainer}>
             <View style={styles.statItem}>
               <LinearGradient
                 colors={['#22c55e', '#16a34a'] as const}
@@ -495,7 +519,9 @@ export default function HistoryScreen() {
         <FlatList
           data={history}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <HistoryGridItem item={item} />}
+          renderItem={({ item }) => (
+            <HistoryGridItem item={item} onPress={() => setSelectedHistory(item)} />
+          )}
           numColumns={2}
           columnWrapperStyle={styles.gridRow}
           contentContainerStyle={styles.listContent}
@@ -513,6 +539,79 @@ export default function HistoryScreen() {
           ListEmptyComponent={EmptyState}
         />
       </View>
+
+      <Modal
+        visible={!!selectedHistory}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelectedHistory(null)}
+      >
+        <View style={styles.detailOverlay}>
+          <TouchableOpacity
+            activeOpacity={1}
+            style={styles.detailBackdrop}
+            onPress={() => setSelectedHistory(null)}
+          />
+
+          {selectedHistory && (
+            <BlurView intensity={isWeb ? 35 : 45} tint="light" style={styles.detailModal}>
+              <View style={styles.detailHeader}>
+                <View style={[styles.detailIconWrap, { backgroundColor: selectedAccentColor + '18' }]}>
+                  <MaterialCommunityIcons
+                    name={getCategoryIcon(selectedHistory.category) as any}
+                    size={30}
+                    color={selectedAccentColor}
+                  />
+                </View>
+                <View style={styles.detailHeaderText}>
+                  <Text style={styles.detailEyebrow}>Detail Riwayat</Text>
+                  <Text style={styles.detailTitle}>{selectedHistory.wasteType}</Text>
+                  <Text style={styles.detailSubtitle}>{formatDateTime(selectedHistory.date)}</Text>
+                </View>
+                <TouchableOpacity style={styles.detailCloseButton} onPress={() => setSelectedHistory(null)}>
+                  <Ionicons name="close" size={20} color="#64748B" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.detailConfidenceCard}>
+                <View style={styles.detailConfidenceTop}>
+                  <Text style={styles.detailConfidenceLabel}>Akurasi Model</Text>
+                  <Text style={[styles.detailConfidenceValue, { color: selectedAccentColor }]}>
+                    {selectedConfidencePct}%
+                  </Text>
+                </View>
+                <View style={styles.detailConfidenceBarBg}>
+                  <View
+                    style={[
+                      styles.detailConfidenceBarFill,
+                      { width: `${selectedConfidencePct}%`, backgroundColor: selectedAccentColor },
+                    ]}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.detailRows}>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailRowLabel}>Kategori</Text>
+                  <Text style={styles.detailRowValue}>{selectedHistory.category}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailRowLabel}>Poin Didapat</Text>
+                  <Text style={[styles.detailRowValue, { color: '#16A34A' }]}>+{selectedHistory.points}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailRowLabel}>Tanggal Scan</Text>
+                  <Text style={styles.detailRowValue}>{formatDate(selectedHistory.date)}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailRowLabel}>ID Riwayat</Text>
+                  <Text style={styles.detailRowValue} numberOfLines={1}>{selectedHistory.id}</Text>
+                </View>
+              </View>
+            </BlurView>
+          )}
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -520,7 +619,7 @@ export default function HistoryScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#eefdf3',
+    backgroundColor: '#F6FBF7',
   },
   backgroundGradient: {
     position: 'absolute',
@@ -543,7 +642,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 14,
     color: '#64748B',
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
   },
 
   // Dekorasi Blob
@@ -554,7 +653,7 @@ const styles = StyleSheet.create({
     width: 170,
     height: 170,
     borderRadius: 85,
-    backgroundColor: 'rgba(217,119,6,0.07)',
+    backgroundColor: 'rgba(217,119,6,0.035)',
   },
   blobTopRight: {
     position: 'absolute',
@@ -563,7 +662,7 @@ const styles = StyleSheet.create({
     width: 200,
     height: 200,
     borderRadius: 100,
-    backgroundColor: 'rgba(16,185,129,0.07)',
+    backgroundColor: 'rgba(16,185,129,0.09)',
   },
   blobBottomLeft: {
     position: 'absolute',
@@ -572,7 +671,7 @@ const styles = StyleSheet.create({
     width: 220,
     height: 220,
     borderRadius: 110,
-    backgroundColor: 'rgba(59,130,246,0.06)',
+    backgroundColor: 'rgba(59,130,246,0.055)',
   },
   blobBottomRight: {
     position: 'absolute',
@@ -581,7 +680,7 @@ const styles = StyleSheet.create({
     width: 190,
     height: 190,
     borderRadius: 95,
-    backgroundColor: 'rgba(139,92,246,0.06)',
+    backgroundColor: 'rgba(139,92,246,0.035)',
   },
   blobMidLeft: {
     position: 'absolute',
@@ -590,7 +689,7 @@ const styles = StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: 'rgba(34,197,94,0.06)',
+    backgroundColor: 'rgba(34,197,94,0.045)',
   },
   blobMidRight: {
     position: 'absolute',
@@ -599,51 +698,60 @@ const styles = StyleSheet.create({
     width: 150,
     height: 150,
     borderRadius: 75,
-    backgroundColor: 'rgba(6,182,212,0.06)',
+    backgroundColor: 'rgba(6,182,212,0.04)',
   },
 
   // Header
   header: {
-    marginHorizontal: isWeb ? 40 : 16,
-    marginTop: isWeb ? 24 : 16,
+    marginHorizontal: GRID_PADDING,
+    marginTop: isWeb ? 24 : 14,
     marginBottom: 12,
-    padding: isWeb ? 24 : 16,
-    borderRadius: 20,
+    paddingHorizontal: isWeb ? 24 : 18,
+    paddingVertical: isWeb ? 22 : 18,
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    borderColor: 'rgba(255,255,255,0.82)',
+    backgroundColor: 'rgba(255,255,255,0.62)',
     shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
     elevation: 3,
     position: 'relative',
   },
   headerContent: {
     width: '100%',
-    alignItems: 'center',
+    paddingRight: isWeb ? 72 : 60,
+  },
+  headerEyebrow: {
+    fontSize: isWeb ? 13 : 11,
+    color: '#16A34A',
+    fontFamily: 'Inter-ExtraBold',
+    letterSpacing: 0,
+    marginBottom: 4,
   },
   headerTitle: {
-    fontSize: isWeb ? 30 : 24,
-    fontWeight: '800',
+    fontSize: isWeb ? 30 : 26,
+    fontFamily: 'Inter-ExtraBold',
     color: '#133B1C',
-    textAlign: 'center',
   },
   headerSubtitle: {
     fontSize: isWeb ? 16 : 13,
     color: '#64748B',
-    marginTop: 2,
-    textAlign: 'center',
+    marginTop: 4,
+    fontFamily: 'Inter-Medium',
   },
   headerIcon: {
     position: 'absolute',
-    right: 16,
+    right: isWeb ? 22 : 18,
     top: '50%',
-    marginTop: -28,
+    marginTop: isWeb ? -28 : -24,
     width: isWeb ? 56 : 48,
     height: isWeb ? 56 : 48,
-    borderRadius: 16,
-    backgroundColor: 'rgba(16,185,129,0.1)',
+    borderRadius: isWeb ? 18 : 16,
+    backgroundColor: 'rgba(16,185,129,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(16,185,129,0.18)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -652,15 +760,15 @@ const styles = StyleSheet.create({
   errorCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: isWeb ? 40 : 16,
+    marginHorizontal: GRID_PADDING,
     marginTop: 4,
     marginBottom: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderRadius: 16,
-    backgroundColor: 'rgba(254, 242, 242, 0.7)',
+    backgroundColor: 'rgba(254, 242, 242, 0.74)',
     borderWidth: 1,
-    borderColor: 'rgba(254, 202, 202, 0.5)',
+    borderColor: 'rgba(254, 202, 202, 0.68)',
     gap: 10,
   },
   errorText: {
@@ -668,23 +776,23 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#B91C1C',
     lineHeight: 18,
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
   },
 
   // Stats
   statsContainer: {
     flexDirection: 'row',
-    marginHorizontal: isWeb ? 40 : 16,
-    marginBottom: 16,
+    marginHorizontal: GRID_PADDING,
+    marginBottom: 14,
     paddingVertical: isWeb ? 24 : 16,
-    borderRadius: 20,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    borderColor: 'rgba(255,255,255,0.82)',
+    backgroundColor: 'rgba(255,255,255,0.62)',
     shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
     elevation: 2,
   },
   statItem: {
@@ -697,13 +805,13 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   statNumber: {
-    fontWeight: '800',
+    fontFamily: 'Inter-ExtraBold',
     color: '#133B1C',
   },
   statLabel: {
     color: '#64748B',
     marginTop: 2,
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
   },
   statDivider: {
     width: 1,
@@ -712,9 +820,9 @@ const styles = StyleSheet.create({
 
   // List / Grid - 2 kolom untuk semua platform
   listContent: {
-    paddingHorizontal: isWeb ? 40 : GRID_PADDING,
-    paddingTop: 4,
-    paddingBottom: isWeb ? 160 : 110,
+    paddingHorizontal: GRID_PADDING,
+    paddingTop: 2,
+    paddingBottom: isWeb ? 170 : 140,
   },
   gridRow: {
     justifyContent: 'space-between',
@@ -723,14 +831,17 @@ const styles = StyleSheet.create({
   },
 
   // Grid Card
+  gridCardTouchable: {
+    overflow: 'hidden',
+  },
   gridCard: {
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.35)',
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    borderColor: 'rgba(255,255,255,0.82)',
+    backgroundColor: 'rgba(255,255,255,0.62)',
     shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.07,
+    shadowRadius: 20,
     elevation: 2,
     overflow: 'hidden',
     height: CARD_HEIGHT,
@@ -749,10 +860,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   gridPointsText: {
-    fontWeight: '800',
+    fontFamily: 'Inter-ExtraBold',
   },
   gridWasteType: {
-    fontWeight: '800',
+    fontFamily: 'Inter-ExtraBold',
     color: '#133B1C',
     textTransform: 'capitalize',
   },
@@ -765,7 +876,7 @@ const styles = StyleSheet.create({
     borderRadius: 2.5,
   },
   gridCategoryText: {
-    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
   },
   gridConfidenceRow: {
     flexDirection: 'row',
@@ -773,14 +884,14 @@ const styles = StyleSheet.create({
   },
   gridConfidenceBarBg: {
     flex: 1,
-    backgroundColor: 'rgba(100,116,139,0.15)',
+    backgroundColor: 'rgba(100,116,139,0.12)',
     overflow: 'hidden',
   },
   gridConfidenceBarFill: {
     height: '100%',
   },
   gridConfidenceText: {
-    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
     color: '#64748B',
     textAlign: 'right',
   },
@@ -788,12 +899,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.05)',
+    borderTopColor: 'rgba(15,23,42,0.06)',
     marginTop: 'auto',
   },
   gridFooterText: {
     color: '#94A3B8',
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
+    flex: 1,
+  },
+  gridDetailIcon: {
+    marginLeft: 'auto',
   },
 
   // Empty State
@@ -806,11 +921,11 @@ const styles = StyleSheet.create({
   },
   emptyBlur: {
     padding: isWeb ? 48 : 30,
-    borderRadius: 24,
+    borderRadius: 22,
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.4)',
+    backgroundColor: 'rgba(255,255,255,0.62)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: 'rgba(255,255,255,0.82)',
     width: isWeb ? '70%' : '100%',
     maxWidth: isWeb ? 600 : undefined,
   },
@@ -825,7 +940,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: isWeb ? 24 : 18,
-    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
     color: '#133B1C',
     marginBottom: 6,
   },
@@ -834,5 +949,134 @@ const styles = StyleSheet.create({
     color: '#64748B',
     textAlign: 'center',
     paddingHorizontal: 20,
+  },
+  detailOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+  },
+  detailBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(15,23,42,0.42)',
+  },
+  detailModal: {
+    width: '100%',
+    maxWidth: 460,
+    borderRadius: 24,
+    padding: isWeb ? 24 : 18,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.82)',
+    backgroundColor: 'rgba(255,255,255,0.72)',
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 18 },
+    shadowOpacity: 0.18,
+    shadowRadius: 32,
+    elevation: 10,
+    overflow: 'hidden',
+  },
+  detailHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 18,
+  },
+  detailIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  detailHeaderText: {
+    flex: 1,
+  },
+  detailEyebrow: {
+    fontSize: 11,
+    color: '#16A34A',
+    fontFamily: 'Inter-ExtraBold',
+    marginBottom: 2,
+  },
+  detailTitle: {
+    fontSize: isWeb ? 24 : 21,
+    color: '#133B1C',
+    fontFamily: 'Inter-ExtraBold',
+    textTransform: 'capitalize',
+  },
+  detailSubtitle: {
+    fontSize: 12,
+    color: '#64748B',
+    fontFamily: 'Inter-Medium',
+    marginTop: 2,
+  },
+  detailCloseButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.58)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.8)',
+  },
+  detailConfidenceCard: {
+    padding: 14,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.58)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.82)',
+    marginBottom: 14,
+  },
+  detailConfidenceTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  detailConfidenceLabel: {
+    fontSize: 13,
+    color: '#64748B',
+    fontFamily: 'Inter-Bold',
+  },
+  detailConfidenceValue: {
+    fontSize: 22,
+    fontFamily: 'Inter-ExtraBold',
+  },
+  detailConfidenceBarBg: {
+    height: 9,
+    borderRadius: 999,
+    backgroundColor: 'rgba(100,116,139,0.12)',
+    overflow: 'hidden',
+  },
+  detailConfidenceBarFill: {
+    height: '100%',
+    borderRadius: 999,
+  },
+  detailRows: {
+    gap: 10,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.46)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.72)',
+  },
+  detailRowLabel: {
+    fontSize: 12,
+    color: '#64748B',
+    fontFamily: 'Inter-Bold',
+  },
+  detailRowValue: {
+    flex: 1,
+    textAlign: 'right',
+    fontSize: 13,
+    color: '#133B1C',
+    fontFamily: 'Inter-ExtraBold',
   },
 });

@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import {
   StyleSheet,
   Text,
+  TextInput,
   View,
   ActivityIndicator,
   Animated,
@@ -24,17 +25,98 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { store } from './store/store';
 
+function getInterFamilyFromStyle(style: any) {
+  const flattened = StyleSheet.flatten(style) || {};
+  const weight = String(flattened.fontWeight || '400').toLowerCase();
+
+  if (weight === '900' || weight === '800' || weight === 'bold') {
+    return 'Inter-ExtraBold';
+  }
+
+  if (weight === '700') {
+    return 'Inter-Bold';
+  }
+
+  if (weight === '600') {
+    return 'Inter-SemiBold';
+  }
+
+  if (weight === '500') {
+    return 'Inter-Medium';
+  }
+
+  return 'Inter-Regular';
+}
+
+function withSupabaseFont(style: any) {
+  return [
+    style,
+    {
+      fontFamily: getInterFamilyFromStyle(style),
+      fontWeight: '400',
+      letterSpacing: 0,
+    },
+  ];
+}
+
+function applySupabaseFont() {
+  const textComponent = Text as any;
+  if (!textComponent.__cyberWasteSupabaseDefaultPatched) {
+    textComponent.defaultProps = textComponent.defaultProps || {};
+    textComponent.defaultProps.style = withSupabaseFont(textComponent.defaultProps.style);
+    textComponent.__cyberWasteSupabaseDefaultPatched = true;
+  }
+
+  if (!textComponent.__cyberWasteSupabaseFontPatched && textComponent.render) {
+    const originalRender = textComponent.render;
+    textComponent.render = function renderWithSupabaseFont(...args: any[]) {
+      const element = originalRender.apply(this, args);
+      if (!React.isValidElement(element)) {
+        return element;
+      }
+
+      const elementProps = element.props as any;
+      const style = elementProps.style;
+
+      return React.cloneElement(element, {
+        ...elementProps,
+        style: withSupabaseFont(style),
+      });
+    };
+    textComponent.__cyberWasteSupabaseFontPatched = true;
+  }
+
+  const inputComponent = TextInput as any;
+  if (!inputComponent.__cyberWasteSupabaseDefaultPatched) {
+    inputComponent.defaultProps = inputComponent.defaultProps || {};
+    inputComponent.defaultProps.style = [
+      inputComponent.defaultProps.style,
+      { fontFamily: 'Inter-Regular', fontWeight: '400', letterSpacing: 0 },
+    ];
+    inputComponent.__cyberWasteSupabaseDefaultPatched = true;
+  }
+}
+
 // Komponen utama yang berisi logika aplikasi
 function AppContent() {
   const { isLoading } = useAuth();
 
   const [fontsLoaded] = useFonts({
+    'Inter-Regular': Inter_400Regular,
+    'Inter-Medium': Inter_500Medium,
+    'Inter-SemiBold': Inter_600SemiBold,
+    'Inter-Bold': Inter_700Bold,
+    'Inter-ExtraBold': Inter_800ExtraBold,
     'GeistSans-Regular': Inter_400Regular,
     'GeistSans-Medium': Inter_500Medium,
     'GeistSans-SemiBold': Inter_600SemiBold,
     'GeistSans-Bold': Inter_700Bold,
     'GeistSans-ExtraBold': Inter_800ExtraBold,
   });
+
+  if (fontsLoaded) {
+    applySupabaseFont();
+  }
 
   // Animations & Toast
   const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({
@@ -130,7 +212,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
     letterSpacing: 0.5,
-    fontFamily: 'GeistSans-Medium',
+    fontFamily: 'Inter-Medium',
   },
   toast: {
     position: 'absolute',
@@ -155,6 +237,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 10,
     flex: 1,
-    fontFamily: 'GeistSans-SemiBold',
+    fontFamily: 'Inter-SemiBold',
   },
 });

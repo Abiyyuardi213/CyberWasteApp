@@ -25,6 +25,7 @@ import { useNavigation } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
+const SCREEN_PADDING = 10;
 
 // Fade In Animation
 const FadeInSection = ({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) => {
@@ -177,10 +178,10 @@ export default function ChangePasswordScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f0fdf4" />
+      <StatusBar barStyle="dark-content" backgroundColor="#EEFDF3" />
       
       <LinearGradient
-        colors={['#f0fdf4', '#dcfce7', '#eef2ff']}
+        colors={['#dcfce7', '#f0fdf4', '#eff6ff'] as const}
         style={styles.backgroundGradient}
       />
 
@@ -305,7 +306,7 @@ export default function ChangePasswordScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f0fdf4',
+    backgroundColor: '#F6FBF7',
   },
   backgroundGradient: {
     position: 'absolute',
@@ -319,7 +320,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: isWeb ? 120 : 90,
+    paddingBottom: isWeb ? 150 : 128,
     paddingTop: 8,
   },
 
@@ -357,13 +358,13 @@ const styles = StyleSheet.create({
 
   // Header
   headerSection: {
-    marginHorizontal: isWeb ? 40 : 16,
+    marginHorizontal: SCREEN_PADDING,
     marginBottom: 16,
     padding: isWeb ? 24 : 16,
-    borderRadius: 24,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    borderColor: 'rgba(255,255,255,0.82)',
+    backgroundColor: 'rgba(255,255,255,0.62)',
     shadowColor: '#0f172a',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
@@ -387,11 +388,11 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    backgroundColor: 'rgba(255,255,255,0.62)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: 'rgba(255,255,255,0.82)',
   },
   headerContent: {
     alignItems: 'center',
@@ -409,33 +410,33 @@ const styles = StyleSheet.create({
   },
   headerBadgeText: {
     fontSize: isWeb ? 12 : 11,
-    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
     color: '#4CAF50',
   },
   headerTitle: {
     fontSize: isWeb ? 26 : 22,
-    fontWeight: '800',
+    fontFamily: 'Inter-ExtraBold',
     color: '#133B1C',
     textAlign: 'center',
-    letterSpacing: 0.3,
+    letterSpacing: 0,
   },
   headerSubtitle: {
     fontSize: isWeb ? 13 : 12,
     color: '#64748B',
     marginTop: 2,
     textAlign: 'center',
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
   },
 
   // Form Card
   formCard: {
-    marginHorizontal: isWeb ? 40 : 16,
+    marginHorizontal: SCREEN_PADDING,
     marginBottom: 20,
     padding: isWeb ? 28 : 20,
-    borderRadius: 24,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    backgroundColor: 'rgba(255,255,255,0.4)',
+    borderColor: 'rgba(255,255,255,0.82)',
+    backgroundColor: 'rgba(255,255,255,0.62)',
     shadowColor: '#0f172a',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
@@ -463,7 +464,7 @@ const styles = StyleSheet.create({
   },
   formTitle: {
     fontSize: isWeb ? 18 : 16,
-    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
     color: '#133B1C',
     textAlign: 'center',
     marginBottom: 4,
@@ -484,7 +485,7 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     fontSize: isWeb ? 13 : 12,
-    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
     color: '#133B1C',
   },
   fieldWrapper: {
@@ -492,14 +493,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderColor: 'rgba(255,255,255,0.72)',
+    backgroundColor: 'rgba(255,255,255,0.58)',
     paddingHorizontal: 14,
     paddingVertical: 2,
   },
   fieldWrapperFocused: {
     borderColor: 'rgba(76, 175, 80, 0.5)',
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    backgroundColor: 'rgba(255,255,255,0.62)',
   },
   fieldIconContainer: {
     marginRight: 10,
@@ -507,8 +508,11 @@ const styles = StyleSheet.create({
   fieldInput: {
     flex: 1,
     fontSize: isWeb ? 15 : 14,
+    fontFamily: 'Inter-Medium',
     color: '#133B1C',
     paddingVertical: 12,
+    outlineStyle: 'none' as any,
+    outlineWidth: 0 as any,
   },
   eyeButton: {
     padding: 4,
@@ -537,7 +541,7 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: '#FFFFFF',
     fontSize: isWeb ? 16 : 14,
-    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
     marginLeft: 8,
   },
 

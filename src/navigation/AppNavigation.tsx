@@ -124,17 +124,17 @@ function MainTabs() {
         }}
       />
       <Tab.Screen 
-        name="Scan" 
-        component={ScanScreen}
-        options={{
-          tabBarLabel: 'Scan',
-        }}
-      />
-      <Tab.Screen 
         name="History" 
         component={HistoryScreen}
         options={{
           tabBarLabel: 'History',
+        }}
+      />
+      <Tab.Screen 
+        name="Scan" 
+        component={ScanScreen}
+        options={{
+          tabBarLabel: 'Scan',
         }}
       />
       <Tab.Screen 

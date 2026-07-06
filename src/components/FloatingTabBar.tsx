@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
 
 export default function FloatingTabBar({ state, descriptors, navigation }: any) {
@@ -23,8 +23,9 @@ export default function FloatingTabBar({ state, descriptors, navigation }: any) 
   // Initialize animated values for each route
   state.routes.forEach((route: any, index: number) => {
     if (!iconScales[route.key]) {
+      const isScan = route.name === 'Scan';
       iconScales[route.key] = new Animated.Value(index === state.index ? 1.1 : 1);
-      iconTranslates[route.key] = new Animated.Value(index === state.index ? -2 : 0);
+      iconTranslates[route.key] = new Animated.Value(isScan ? -18 : index === state.index ? -2 : 0);
     }
   });
 
@@ -32,6 +33,7 @@ export default function FloatingTabBar({ state, descriptors, navigation }: any) 
   useEffect(() => {
     state.routes.forEach((route: any, index: number) => {
       const isFocused = state.index === index;
+      const isScan = route.name === 'Scan';
       const scale = iconScales[route.key];
       const translateY = iconTranslates[route.key];
 
@@ -44,7 +46,7 @@ export default function FloatingTabBar({ state, descriptors, navigation }: any) 
             useNativeDriver: true,
           }),
           Animated.spring(translateY, {
-            toValue: -2,
+            toValue: isScan ? -22 : -2,
             friction: 6,
             tension: 50,
             useNativeDriver: true,
@@ -59,7 +61,7 @@ export default function FloatingTabBar({ state, descriptors, navigation }: any) 
             useNativeDriver: true,
           }),
           Animated.spring(translateY, {
-            toValue: 0,
+            toValue: isScan ? -18 : 0,
             friction: 6,
             tension: 50,
             useNativeDriver: true,
@@ -98,12 +100,12 @@ export default function FloatingTabBar({ state, descriptors, navigation }: any) 
   return (
     <View style={styles.tabBarContainer}>
       <BlurView 
-        intensity={isWeb ? 30 : 40} 
+        intensity={isWeb ? 18 : 24} 
         tint="light" 
         style={styles.floatingTabBar}
       >
         <LinearGradient
-          colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0.3)']}
+          colors={['rgba(255, 255, 255, 0.72)', 'rgba(255, 255, 255, 0.46)']}
           style={styles.tabBarGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
@@ -129,8 +131,9 @@ export default function FloatingTabBar({ state, descriptors, navigation }: any) 
           };
 
           const iconName = getIconName(route.name);
-          const iconColor = getIconColor(isFocused);
-          const iconSize = getIconSize(isFocused);
+          const isScan = route.name === 'Scan';
+          const iconColor = isScan ? '#FFFFFF' : getIconColor(isFocused);
+          const iconSize = isScan ? (isWeb ? 30 : 28) : getIconSize(isFocused);
 
           return (
             <TouchableOpacity
@@ -140,12 +143,13 @@ export default function FloatingTabBar({ state, descriptors, navigation }: any) 
               accessibilityLabel={options.tabBarAccessibilityLabel}
               testID={options.tabBarTestID}
               onPress={onPress}
-              style={styles.tabItem}
-              activeOpacity={0.7}
+              style={[styles.tabItem, isScan && styles.scanTabItem]}
+              activeOpacity={isScan ? 0.82 : 0.7}
             >
               <Animated.View
                 style={[
                   styles.iconContainer,
+                  isScan && styles.scanIconContainer,
                   {
                     transform: [
                       { scale },
@@ -154,11 +158,15 @@ export default function FloatingTabBar({ state, descriptors, navigation }: any) 
                   },
                 ]}
               >
-                <Ionicons
-                  name={iconName}
-                  size={iconSize}
-                  color={iconColor}
-                />
+                {isScan && (
+                  <LinearGradient
+                    colors={isFocused ? ['#22C55E', '#0F8F4C'] : ['#34D399', '#10B981']}
+                    style={styles.scanIconGradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                  />
+                )}
+                <Ionicons name={iconName} size={iconSize} color={iconColor} />
               </Animated.View>
             </TouchableOpacity>
           );
@@ -171,9 +179,9 @@ export default function FloatingTabBar({ state, descriptors, navigation }: any) 
 const styles = StyleSheet.create({
   tabBarContainer: {
     position: 'absolute',
-    bottom: isWeb ? 30 : 24,
-    left: isWeb ? 40 : 20,
-    right: isWeb ? 40 : 20,
+    bottom: isWeb ? 24 : 18,
+    left: isWeb ? 24 : 8,
+    right: isWeb ? 24 : 8,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
@@ -181,20 +189,20 @@ const styles = StyleSheet.create({
   },
   floatingTabBar: {
     flexDirection: 'row',
-    borderRadius: 30,
-    height: isWeb ? 65 : 60,
+    borderRadius: 28,
+    height: isWeb ? 64 : 58,
     width: '100%',
     alignItems: 'center',
     justifyContent: 'space-around',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    borderColor: 'rgba(255, 255, 255, 0.72)',
+    backgroundColor: 'rgba(255, 255, 255, 0.58)',
     shadowColor: '#0f172a',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 10,
-    overflow: 'hidden',
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
+    elevation: 8,
+    overflow: 'visible',
     position: 'relative',
   },
   tabBarGradient: {
@@ -203,7 +211,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    borderRadius: 30,
+    borderRadius: 28,
   },
   tabItem: {
     flex: 1,
@@ -214,11 +222,36 @@ const styles = StyleSheet.create({
     position: 'relative',
     zIndex: 2,
   },
+  scanTabItem: {
+    zIndex: 8,
+  },
   iconContainer: {
     width: 44,
     height: 44,
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  scanIconContainer: {
+    width: isWeb ? 72 : 66,
+    height: isWeb ? 72 : 66,
+    borderRadius: isWeb ? 36 : 33,
+    borderWidth: 5,
+    borderColor: 'rgba(240, 253, 244, 0.96)',
+    backgroundColor: '#10B981',
+    shadowColor: '#064E3B',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.22,
+    shadowRadius: 20,
+    elevation: 14,
+    overflow: 'hidden',
+  },
+  scanIconGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: isWeb ? 36 : 33,
   },
 });

@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   skipBtnText: {
     color: '#64748b',
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
     marginRight: 2,
   },
   middleContent: {
@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 26,
-    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
     color: '#0f172a',
     textAlign: 'center',
     marginBottom: 12,
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
   onboardingButtonText: {
     color: '#ffffff',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
     letterSpacing: 0.3,
   },
   buttonIcon: {

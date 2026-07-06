@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   Animated,
   Dimensions,
   StatusBar,
@@ -272,11 +271,7 @@ export default function LoginScreen({ showToast }: LoginScreenProps) {
         <MaterialCommunityIcons name="leaf" size={22} color="rgba(16, 185, 129, 0.5)" style={styles.ecoIcon} />
       </Animated.View>
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContainer}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={styles.fixedContainer}>
         <Animated.View
           style={[
             styles.contentWrapper,
@@ -452,7 +447,7 @@ export default function LoginScreen({ showToast }: LoginScreenProps) {
             </BlurView>
           </View>
         </Animated.View>
-      </ScrollView>
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -461,6 +456,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f0fdf4',
+    overflow: 'hidden',
   },
   background: {
     position: 'absolute',
@@ -546,32 +542,32 @@ const styles = StyleSheet.create({
     bottom: height * 0.24,
     right: width * 0.24,
   },
-  scrollContainer: {
-    flexGrow: 1,
+  fixedContainer: {
+    flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: Platform.OS === 'web' ? Math.min(40, width * 0.08) : 24,
-    paddingVertical: Platform.OS === 'web' ? 60 : 40,
+    paddingHorizontal: Platform.OS === 'web' ? Math.min(28, width * 0.06) : 16,
+    paddingVertical: Platform.OS === 'web' ? 16 : 14,
   },
   contentWrapper: {
     width: '100%',
-    maxWidth: 420,
+    maxWidth: 390,
     alignSelf: 'center',
     zIndex: 2,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 16,
   },
   logoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 10,
     position: 'relative',
   },
   logoGradient: {
-    width: 64,
-    height: 64,
-    borderRadius: 18,
+    width: 56,
+    height: 56,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#22c55e',
@@ -591,20 +587,20 @@ const styles = StyleSheet.create({
     borderColor: '#22c55e',
   },
   appName: {
-    fontSize: Platform.OS === 'web' ? 32 : 28,
-    fontWeight: '800',
+    fontSize: Platform.OS === 'web' ? 30 : 27,
+    fontFamily: 'Inter-ExtraBold',
     color: '#0f172a',
     letterSpacing: 1.5,
     marginBottom: 4,
   },
   appSubtitle: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#475569',
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
     letterSpacing: 0.5,
   },
   cardShadowWrapper: {
-    borderRadius: 28,
+    borderRadius: 22,
     shadowColor: '#0f172a',
     shadowOffset: { width: 0, height: 16 },
     shadowOpacity: 0.12,
@@ -614,8 +610,8 @@ const styles = StyleSheet.create({
   },
   // Glassmorphism card: frosted, semi-transparent, soft white border — never toggles
   card: {
-    borderRadius: 28,
-    padding: Platform.OS === 'web' ? 32 : 24,
+    borderRadius: 22,
+    padding: Platform.OS === 'web' ? 24 : 20,
     overflow: 'hidden',
     backgroundColor: 'rgba(255, 255, 255, 0.55)',
     borderWidth: 1,
@@ -630,24 +626,24 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
   },
   cardTitle: {
-    fontSize: Platform.OS === 'web' ? 24 : 22,
-    fontWeight: '700',
+    fontSize: Platform.OS === 'web' ? 22 : 21,
+    fontFamily: 'Inter-Bold',
     color: '#0f172a',
     marginBottom: 4,
   },
   cardSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#475569',
-    marginBottom: 28,
+    marginBottom: 18,
   },
   inputWrapper: {
-    marginBottom: 18,
+    marginBottom: 12,
   },
   inputLabel: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
     color: '#0f172a',
-    marginBottom: 6,
+    marginBottom: 5,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -657,7 +653,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: 'rgba(226, 232, 240, 0.8)',
     paddingHorizontal: 16,
-    height: Platform.OS === 'web' ? 52 : 56,
+    height: Platform.OS === 'web' ? 50 : 52,
   },
   inputContainerFocused: {
     borderColor: '#22c55e',
@@ -674,9 +670,11 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     color: '#0f172a',
-    fontSize: Platform.OS === 'web' ? 15 : 16,
-    fontWeight: '500',
+    fontSize: Platform.OS === 'web' ? 14 : 15,
+    fontFamily: 'Inter-Medium',
     paddingVertical: Platform.OS === 'ios' ? 12 : 0,
+    outlineStyle: 'none' as any,
+    outlineWidth: 0 as any,
   },
   inputWithPadding: {
     paddingRight: 48,
@@ -688,13 +686,13 @@ const styles = StyleSheet.create({
   },
   forgotPassword: {
     alignSelf: 'flex-end',
-    marginBottom: 24,
+    marginBottom: 18,
     marginTop: -4,
   },
   forgotPasswordText: {
     fontSize: 13,
     color: '#16a34a',
-    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
   },
   buttonWrapper: {
     position: 'relative',
@@ -712,7 +710,7 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     borderRadius: 14,
-    height: Platform.OS === 'web' ? 52 : 56,
+    height: Platform.OS === 'web' ? 50 : 52,
     overflow: 'hidden',
     shadowColor: '#22c55e',
     shadowOffset: { width: 0, height: 4 },
@@ -734,7 +732,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#ffffff',
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
     letterSpacing: 0.5,
   },
   buttonIcon: {
@@ -743,7 +741,7 @@ const styles = StyleSheet.create({
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 24,
+    marginVertical: 16,
   },
   divider: {
     flex: 1,
@@ -754,7 +752,7 @@ const styles = StyleSheet.create({
     color: '#64748b',
     fontSize: 13,
     paddingHorizontal: 16,
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
   },
   footer: {
     flexDirection: 'row',
@@ -768,7 +766,7 @@ const styles = StyleSheet.create({
   footerLink: {
     color: '#16a34a',
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
     marginLeft: 6,
   },
 });

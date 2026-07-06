@@ -632,12 +632,33 @@ app.get('/api/eco-points', authenticateToken, async (req, res) => {
       WHERE user_id = ?
     `, [req.user.id]);
 
+    const redeemedRows = await dbAll(`
+      SELECT id, reward_id, points, redeemed_at
+      FROM redeemed_rewards
+      WHERE user_id = ?
+      ORDER BY datetime(redeemed_at) DESC, id DESC
+      LIMIT 20
+    `, [req.user.id]);
+
     const earnedPoints = Number(scanStats?.total_points || 0);
     const redeemedPoints = Number(redeemedStats?.redeemed_points || 0);
     const totalPoints = Math.max(0, earnedPoints - redeemedPoints);
     const itemsRecycled = Number(scanStats?.scan_count || 0);
     const levelInfo = getPointLevel(totalPoints);
     const co2Saved = Number((itemsRecycled * 0.68).toFixed(1));
+    const redeemHistory = redeemedRows.map((row) => {
+      const reward = rewards.find((item) => item.id === Number(row.reward_id));
+
+      return {
+        id: String(row.id),
+        rewardId: Number(row.reward_id),
+        rewardName: reward?.name || 'Reward',
+        rewardDescription: reward?.description || 'Reward yang ditukarkan',
+        icon: reward?.icon || 'gift-outline',
+        points: Number(row.points || 0),
+        redeemedAt: row.redeemed_at,
+      };
+    });
 
     res.json({
       success: true,
@@ -648,6 +669,7 @@ app.get('/api/eco-points', authenticateToken, async (req, res) => {
         itemsRecycled,
       },
       rewards,
+      redeemHistory,
     });
   } catch (error) {
     console.error('Eco points fetch error:', error);

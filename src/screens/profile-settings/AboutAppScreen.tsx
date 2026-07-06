@@ -20,6 +20,7 @@ import { useNavigation } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
+const SCREEN_PADDING = 10;
 
 // Fade In Animation
 const FadeInSection = ({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) => {
@@ -85,10 +86,10 @@ export default function AboutAppScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f0fdf4" />
+      <StatusBar barStyle="dark-content" backgroundColor="#EEFDF3" />
       
       <LinearGradient
-        colors={['#f0fdf4', '#dcfce7', '#eef2ff']}
+        colors={['#dcfce7', '#f0fdf4', '#eff6ff'] as const}
         style={styles.backgroundGradient}
       />
 
@@ -196,7 +197,7 @@ export default function AboutAppScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f0fdf4',
+    backgroundColor: '#F6FBF7',
   },
   backgroundGradient: {
     position: 'absolute',
@@ -210,7 +211,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 30,
+    paddingBottom: isWeb ? 150 : 128,
     paddingTop: 10,
     justifyContent: 'center',
   },
@@ -231,7 +232,7 @@ const styles = StyleSheet.create({
 
   // Header
   headerSection: {
-    marginHorizontal: isWeb ? 50 : 24,
+    marginHorizontal: SCREEN_PADDING,
     marginBottom: 20,
     paddingVertical: 10,
     position: 'relative',
@@ -244,11 +245,11 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    backgroundColor: 'rgba(255,255,255,0.62)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: 'rgba(255,255,255,0.82)',
   },
   headerContent: {
     alignItems: 'center',
@@ -256,27 +257,27 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: isWeb ? 38 : 32,
-    fontWeight: '900',
+    fontFamily: 'Inter-ExtraBold',
     color: '#133B1C',
-    letterSpacing: 0.5,
+    letterSpacing: 0,
   },
   headerSubtitle: {
     fontSize: isWeb ? 16 : 14,
     color: '#64748B',
     marginTop: 4,
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
   },
 
   // Description
   descriptionCard: {
-    marginHorizontal: isWeb ? 50 : 24,
+    marginHorizontal: SCREEN_PADDING,
     marginBottom: 16,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.4)',
+    backgroundColor: 'rgba(255,255,255,0.62)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: 'rgba(255,255,255,0.82)',
     shadowColor: '#0f172a',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.03,
@@ -285,7 +286,7 @@ const styles = StyleSheet.create({
   },
   descriptionTitle: {
     fontSize: isWeb ? 18 : 16,
-    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
     color: '#133B1C',
     textAlign: 'center',
     marginBottom: 8,
@@ -295,13 +296,13 @@ const styles = StyleSheet.create({
     color: '#475569',
     textAlign: 'center',
     lineHeight: 20,
-    fontWeight: '400',
+    fontFamily: 'Inter-Regular',
   },
 
   // Divider
   divider: {
     height: 1,
-    marginHorizontal: isWeb ? 50 : 24,
+    marginHorizontal: SCREEN_PADDING,
     marginVertical: 12,
     backgroundColor: 'rgba(0,0,0,0.05)',
   },
@@ -309,15 +310,15 @@ const styles = StyleSheet.create({
   // Section Title
   sectionTitle: {
     fontSize: isWeb ? 17 : 15,
-    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
     color: '#133B1C',
-    marginHorizontal: isWeb ? 50 : 24,
+    marginHorizontal: SCREEN_PADDING,
     marginBottom: 12,
   },
 
   // Features
   featuresContainer: {
-    marginHorizontal: isWeb ? 50 : 24,
+    marginHorizontal: SCREEN_PADDING,
     gap: 8,
   },
   featureItem: {
@@ -326,7 +327,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: 'rgba(255,255,255,0.58)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)',
   },
@@ -344,7 +345,7 @@ const styles = StyleSheet.create({
   },
   featureTitle: {
     fontSize: isWeb ? 14 : 13,
-    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
     color: '#133B1C',
   },
   featureDescription: {
@@ -357,7 +358,7 @@ const styles = StyleSheet.create({
   techContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginHorizontal: isWeb ? 50 : 24,
+    marginHorizontal: SCREEN_PADDING,
     gap: 8,
   },
   techTag: {
@@ -371,7 +372,7 @@ const styles = StyleSheet.create({
   techTagText: {
     fontSize: isWeb ? 13 : 12,
     color: '#4CAF50',
-    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
   },
 
   // Footer
@@ -383,7 +384,7 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: isWeb ? 14 : 13,
     color: '#64748B',
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
   },
   footerVersion: {
     fontSize: isWeb ? 12 : 11,

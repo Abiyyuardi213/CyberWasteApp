@@ -71,16 +71,16 @@ export function SettingsLayout({
   return (
     <SafeAreaView style={styles.safeArea}>
       <LinearGradient
-        colors={['#f0fdf4', '#dcfce7', '#eef2ff']}
+        colors={['#F6FBF7', '#ECFDF3', '#EEF7F1']}
         style={styles.backgroundGradient}
       />
 
       {/* Background Decorations */}
       <View style={styles.decoLeaf1}>
-        <MaterialCommunityIcons name="leaf" size={50} color="rgba(76, 175, 80, 0.06)" />
+        <MaterialCommunityIcons name="leaf" size={44} color="rgba(76, 175, 80, 0.035)" />
       </View>
       <View style={styles.decoLeaf2}>
-        <MaterialCommunityIcons name="leaf-maple" size={60} color="rgba(76, 175, 80, 0.05)" />
+        <MaterialCommunityIcons name="leaf-maple" size={50} color="rgba(76, 175, 80, 0.032)" />
       </View>
       <View style={styles.decoCircle1} />
       <View style={styles.decoCircle2} />
@@ -180,7 +180,7 @@ export function Field({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f0fdf4',
+    backgroundColor: '#F6FBF7',
   },
   backgroundGradient: {
     position: 'absolute',
@@ -191,8 +191,8 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: isWeb ? 120 : 90,
-    paddingTop: 8,
+    paddingBottom: isWeb ? 136 : 118,
+    paddingTop: 12,
   },
 
   // Background Decorations
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: 'rgba(76,175,80,0.03)',
+    backgroundColor: 'rgba(76,175,80,0.018)',
   },
   decoCircle2: {
     position: 'absolute',
@@ -224,22 +224,22 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: 'rgba(59,130,246,0.03)',
+    backgroundColor: 'rgba(59,130,246,0.018)',
   },
 
   // Header
   headerSection: {
-    marginHorizontal: isWeb ? 40 : 16,
+    marginHorizontal: isWeb ? 40 : 8,
     marginBottom: 16,
-    padding: isWeb ? 24 : 16,
-    borderRadius: 24,
+    padding: isWeb ? 24 : 18,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    borderColor: 'rgba(255,255,255,0.78)',
+    backgroundColor: 'rgba(255,255,255,0.64)',
     shadowColor: '#0f172a',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
+    shadowOpacity: 0.07,
+    shadowRadius: 18,
     elevation: 3,
     overflow: 'hidden',
     position: 'relative',
@@ -258,8 +258,8 @@ const styles = StyleSheet.create({
     zIndex: 10,
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.68)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
@@ -274,22 +274,22 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: isWeb ? 26 : 22,
-    fontWeight: '800',
+    fontFamily: 'Inter-ExtraBold',
     color: '#133B1C',
     textAlign: 'center',
-    letterSpacing: 0.3,
+    letterSpacing: 0,
   },
   subtitle: {
     fontSize: isWeb ? 13 : 12,
     color: '#64748B',
     marginTop: 4,
     textAlign: 'center',
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
   },
 
   // Content
   contentContainer: {
-    marginHorizontal: isWeb ? 40 : 16,
+    marginHorizontal: isWeb ? 40 : 8,
   },
 
   // Field
@@ -298,15 +298,15 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     fontSize: isWeb ? 13 : 12,
-    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
     color: '#133B1C',
     marginBottom: 8,
   },
   fieldWrapper: {
-    borderRadius: 14,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderColor: 'rgba(255,255,255,0.72)',
+    backgroundColor: 'rgba(255,255,255,0.58)',
     overflow: 'hidden',
   },
   fieldWrapperFocused: {
@@ -335,14 +335,14 @@ const styles = StyleSheet.create({
   // Card (untuk digunakan di child components)
   card: {
     backgroundColor: 'rgba(255,255,255,0.4)',
-    borderRadius: 20,
+    borderRadius: 16,
     padding: isWeb ? 20 : 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: 'rgba(255,255,255,0.76)',
     shadowColor: '#0f172a',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
     elevation: 3,
   },
 
@@ -360,7 +360,7 @@ const styles = StyleSheet.create({
   },
   rowTitle: {
     fontSize: isWeb ? 15 : 14,
-    fontWeight: '800',
+    fontFamily: 'Inter-ExtraBold',
     color: '#0F172A',
   },
   rowSubtitle: {
@@ -375,7 +375,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: isWeb ? 16 : 14,
-    borderRadius: 14,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(226, 232, 240, 0.5)',
     marginBottom: 10,
@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
   // Static Text (untuk digunakan di child components)
   staticTitle: {
     fontSize: isWeb ? 16 : 15,
-    fontWeight: '800',
+    fontFamily: 'Inter-ExtraBold',
     color: '#133B1C',
     marginBottom: 6,
   },
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: '#FFFFFF',
     fontSize: isWeb ? 15 : 14,
-    fontWeight: '800',
+    fontFamily: 'Inter-ExtraBold',
   },
 });
 
