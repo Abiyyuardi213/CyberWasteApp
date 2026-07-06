@@ -439,6 +439,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 4,
+    justifyContent: 'center', 
+    alignItems: 'center',     
   },
   avatarGradient: {
     position: 'absolute',
