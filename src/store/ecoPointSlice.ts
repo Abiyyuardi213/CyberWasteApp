@@ -27,6 +27,7 @@ export interface RedeemHistoryItem {
   icon: string;
   points: number;
   redeemedAt: string;
+  voucherCode?: string;
 }
 
 interface EcoPointState {

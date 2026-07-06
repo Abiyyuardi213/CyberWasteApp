@@ -657,6 +657,7 @@ app.get('/api/eco-points', authenticateToken, async (req, res) => {
         icon: reward?.icon || 'gift-outline',
         points: Number(row.points || 0),
         redeemedAt: row.redeemed_at,
+        voucherCode: `ECO-${String(row.reward_id).padStart(2, '0')}-${String(row.id).padStart(6, '0')}`,
       };
     });
 
@@ -724,6 +725,7 @@ app.post('/api/eco-points/redeem', authenticateToken, async (req, res) => {
       icon: reward.icon,
       points: reward.points,
       redeemedAt: new Date().toISOString(),
+      voucherCode: `ECO-${String(reward.id).padStart(2, '0')}-${String(redeemResult.lastID).padStart(6, '0')}`,
     };
 
     res.json({

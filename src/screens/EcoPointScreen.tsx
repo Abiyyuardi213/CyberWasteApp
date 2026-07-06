@@ -10,6 +10,8 @@ import {
   Dimensions,
   Platform,
   Pressable,
+  TouchableOpacity,
+  Modal,
   Animated,
   Easing,
 } from 'react-native';
@@ -291,20 +293,82 @@ const formatRedeemDate = (dateString: string) => {
   });
 };
 
-const RedeemHistoryCard = ({ item }: { item: RedeemHistoryItem }) => (
-  <BlurView intensity={isWeb ? 20 : 30} tint="light" style={styles.redeemHistoryCard}>
-    <View style={styles.redeemHistoryIcon}>
-      <Ionicons name={item.icon as any} size={isWeb ? 20 : 18} color="#10B981" />
-    </View>
-    <View style={styles.redeemHistoryContent}>
-      <Text style={styles.redeemHistoryName}>{item.rewardName}</Text>
-      <Text style={styles.redeemHistoryDate}>{formatRedeemDate(item.redeemedAt)}</Text>
-    </View>
-    <View style={styles.redeemHistoryPoints}>
-      <Text style={styles.redeemHistoryPointsText}>-{item.points}</Text>
-      <MaterialCommunityIcons name="leaf" size={11} color="#EF4444" />
-    </View>
-  </BlurView>
+const getVoucherCode = (item: RedeemHistoryItem) => {
+  if (item.voucherCode) return item.voucherCode;
+  return `ECO-${String(item.rewardId).padStart(2, '0')}-${String(item.id).padStart(6, '0')}`;
+};
+
+const MyVoucherCard = ({
+  item,
+  onPress,
+}: {
+  item: RedeemHistoryItem;
+  onPress: () => void;
+}) => (
+  <TouchableOpacity activeOpacity={0.88} onPress={onPress} style={styles.voucherTouchable}>
+    <LinearGradient
+      colors={['#14532D', '#16A34A', '#22C55E'] as const}
+      style={styles.voucherCard}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+    >
+      <View style={styles.voucherPatternCircleTop} />
+      <View style={styles.voucherPatternCircleBottom} />
+
+      <View style={styles.voucherHeader}>
+        <View style={styles.voucherIconWrap}>
+          <Ionicons name={item.icon as any} size={22} color="#16A34A" />
+        </View>
+        <View style={styles.voucherStatusBadge}>
+          <View style={styles.voucherStatusDot} />
+          <Text style={styles.voucherStatusText}>Aktif</Text>
+        </View>
+      </View>
+
+      <Text style={styles.voucherName} numberOfLines={1}>{item.rewardName}</Text>
+      <Text style={styles.voucherDescription} numberOfLines={2}>{item.rewardDescription}</Text>
+
+      <View style={styles.voucherDivider}>
+        <View style={styles.voucherDash} />
+      </View>
+
+      <View style={styles.voucherCodeRow}>
+        <View>
+          <Text style={styles.voucherCodeLabel}>Kode Referensi</Text>
+          <Text style={styles.voucherCode}>{getVoucherCode(item)}</Text>
+        </View>
+        <View style={styles.voucherPointsBadge}>
+          <Text style={styles.voucherPointsText}>-{item.points}</Text>
+          <MaterialCommunityIcons name="leaf" size={11} color="#FFFFFF" />
+        </View>
+      </View>
+    </LinearGradient>
+  </TouchableOpacity>
+);
+
+const RedeemHistoryCard = ({
+  item,
+  onPress,
+}: {
+  item: RedeemHistoryItem;
+  onPress: () => void;
+}) => (
+  <TouchableOpacity activeOpacity={0.86} onPress={onPress} style={styles.redeemHistoryTouchable}>
+    <BlurView intensity={isWeb ? 20 : 30} tint="light" style={styles.redeemHistoryCard}>
+      <View style={styles.redeemHistoryIcon}>
+        <Ionicons name={item.icon as any} size={isWeb ? 20 : 18} color="#10B981" />
+      </View>
+      <View style={styles.redeemHistoryContent}>
+        <Text style={styles.redeemHistoryName}>{item.rewardName}</Text>
+        <Text style={styles.redeemHistoryDate}>{formatRedeemDate(item.redeemedAt)}</Text>
+      </View>
+      <View style={styles.redeemHistoryPoints}>
+        <Text style={styles.redeemHistoryPointsText}>-{item.points}</Text>
+        <MaterialCommunityIcons name="leaf" size={11} color="#EF4444" />
+      </View>
+      <Ionicons name="chevron-forward" size={16} color="#94A3B8" />
+    </BlurView>
+  </TouchableOpacity>
 );
 
 export default function EcoPointScreen() {
@@ -312,6 +376,7 @@ export default function EcoPointScreen() {
   const { token } = useAuth();
   const { userPoints, rewards, redeemHistory, redeemingId, loading, error } = useAppSelector((state) => state.ecoPoint);
   const [prevPoints, setPrevPoints] = useState(userPoints.totalPoints);
+  const [selectedRedeemHistory, setSelectedRedeemHistory] = useState<RedeemHistoryItem | null>(null);
   const [redeemToast, setRedeemToast] = useState<{
     visible: boolean;
     message: string;
@@ -605,8 +670,38 @@ export default function EcoPointScreen() {
           </View>
         </FadeInSection>
 
+        {/* Voucher Saya */}
+        <FadeInSection delay={650}>
+          <View style={styles.myVoucherSection}>
+            <View style={styles.myVoucherHeader}>
+              <Text style={styles.sectionTitle}>🎟️ Voucher Saya</Text>
+              <Text style={styles.myVoucherCount}>{redeemHistory.length} voucher</Text>
+            </View>
+            <Text style={styles.myVoucherSubtitle}>
+              Reward yang berhasil ditukar akan muncul sebagai voucher aktif.
+            </Text>
+
+            {redeemHistory.length > 0 ? (
+              redeemHistory.map((voucher) => (
+                <MyVoucherCard
+                  key={`voucher-${voucher.id}`}
+                  item={voucher}
+                  onPress={() => setSelectedRedeemHistory(voucher)}
+                />
+              ))
+            ) : (
+              <BlurView intensity={isWeb ? 20 : 30} tint="light" style={styles.myVoucherEmpty}>
+                <Ionicons name="ticket-outline" size={22} color="#94A3B8" />
+                <Text style={styles.myVoucherEmptyText}>
+                  Belum ada voucher. Tukarkan poin untuk mendapatkan voucher pertama.
+                </Text>
+              </BlurView>
+            )}
+          </View>
+        </FadeInSection>
+
         {/* Riwayat Tukar Poin */}
-        <FadeInSection delay={700}>
+        <FadeInSection delay={800}>
           <View style={styles.redeemHistorySection}>
             <View style={styles.redeemHistoryHeader}>
               <Text style={styles.sectionTitle}>🧾 Riwayat Tukar Poin</Text>
@@ -615,7 +710,11 @@ export default function EcoPointScreen() {
 
             {redeemHistory.length > 0 ? (
               redeemHistory.map((historyItem) => (
-                <RedeemHistoryCard key={historyItem.id} item={historyItem} />
+                <RedeemHistoryCard
+                  key={historyItem.id}
+                  item={historyItem}
+                  onPress={() => setSelectedRedeemHistory(historyItem)}
+                />
               ))
             ) : (
               <BlurView intensity={isWeb ? 20 : 30} tint="light" style={styles.redeemHistoryEmpty}>
@@ -629,7 +728,7 @@ export default function EcoPointScreen() {
         </FadeInSection>
 
         {/* Tips Tambahan */}
-        <FadeInSection delay={900}>
+        <FadeInSection delay={1000}>
           <BlurView intensity={isWeb ? 20 : 30} tint="light" style={styles.footerTip}>
             <Ionicons name="bulb-outline" size={isWeb ? 18 : 16} color="#1E4E2C" />
             <Text style={styles.footerTipText}>
@@ -671,6 +770,70 @@ export default function EcoPointScreen() {
           </BlurView>
         </Animated.View>
       )}
+
+      <Modal
+        visible={!!selectedRedeemHistory}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelectedRedeemHistory(null)}
+      >
+        <View style={styles.redeemDetailOverlay}>
+          <TouchableOpacity
+            activeOpacity={1}
+            style={styles.redeemDetailBackdrop}
+            onPress={() => setSelectedRedeemHistory(null)}
+          />
+
+          {selectedRedeemHistory && (
+            <BlurView intensity={isWeb ? 35 : 45} tint="light" style={styles.redeemDetailModal}>
+              <View style={styles.redeemDetailHeader}>
+                <View style={styles.redeemDetailIcon}>
+                  <Ionicons name={selectedRedeemHistory.icon as any} size={30} color="#10B981" />
+                </View>
+                <View style={styles.redeemDetailHeaderText}>
+                  <Text style={styles.redeemDetailEyebrow}>Detail Penukaran</Text>
+                  <Text style={styles.redeemDetailTitle}>{selectedRedeemHistory.rewardName}</Text>
+                  <Text style={styles.redeemDetailSubtitle}>{selectedRedeemHistory.rewardDescription}</Text>
+                </View>
+                <TouchableOpacity style={styles.redeemDetailCloseButton} onPress={() => setSelectedRedeemHistory(null)}>
+                  <Ionicons name="close" size={20} color="#64748B" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.redeemDetailPointCard}>
+                <Text style={styles.redeemDetailPointLabel}>Poin Ditukar</Text>
+                <View style={styles.redeemDetailPointValueWrap}>
+                  <Text style={styles.redeemDetailPointValue}>-{selectedRedeemHistory.points}</Text>
+                  <MaterialCommunityIcons name="leaf" size={18} color="#EF4444" />
+                </View>
+              </View>
+
+              <View style={styles.redeemDetailRows}>
+                <View style={styles.redeemDetailRow}>
+                  <Text style={styles.redeemDetailRowLabel}>Kode Referensi</Text>
+                  <Text style={styles.redeemDetailRowValue} numberOfLines={1}>{getVoucherCode(selectedRedeemHistory)}</Text>
+                </View>
+                <View style={styles.redeemDetailRow}>
+                  <Text style={styles.redeemDetailRowLabel}>Tanggal</Text>
+                  <Text style={styles.redeemDetailRowValue}>{formatRedeemDate(selectedRedeemHistory.redeemedAt)}</Text>
+                </View>
+                <View style={styles.redeemDetailRow}>
+                  <Text style={styles.redeemDetailRowLabel}>Reward ID</Text>
+                  <Text style={styles.redeemDetailRowValue}>{selectedRedeemHistory.rewardId}</Text>
+                </View>
+                <View style={styles.redeemDetailRow}>
+                  <Text style={styles.redeemDetailRowLabel}>Transaksi ID</Text>
+                  <Text style={styles.redeemDetailRowValue} numberOfLines={1}>{selectedRedeemHistory.id}</Text>
+                </View>
+                <View style={styles.redeemDetailRow}>
+                  <Text style={styles.redeemDetailRowLabel}>Status</Text>
+                  <Text style={[styles.redeemDetailRowValue, styles.redeemDetailStatus]}>Berhasil</Text>
+                </View>
+              </View>
+            </BlurView>
+          )}
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1181,6 +1344,176 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
   },
 
+  // My Vouchers
+  myVoucherSection: {
+    marginTop: 16,
+  },
+  myVoucherHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  myVoucherCount: {
+    marginBottom: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: 'rgba(16,185,129,0.1)',
+    color: '#10B981',
+    fontSize: isWeb ? 11 : 10,
+    fontFamily: 'Inter-Bold',
+  },
+  myVoucherSubtitle: {
+    marginTop: -4,
+    marginBottom: 10,
+    fontSize: isWeb ? 12 : 11,
+    color: '#64748B',
+    fontFamily: 'Inter-Medium',
+  },
+  voucherTouchable: {
+    borderRadius: 20,
+    marginBottom: 10,
+  },
+  voucherCard: {
+    minHeight: isWeb ? 178 : 168,
+    borderRadius: 20,
+    padding: 16,
+    overflow: 'hidden',
+    shadowColor: '#064E3B',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    elevation: 7,
+  },
+  voucherPatternCircleTop: {
+    position: 'absolute',
+    top: -34,
+    right: -28,
+    width: 112,
+    height: 112,
+    borderRadius: 56,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+  },
+  voucherPatternCircleBottom: {
+    position: 'absolute',
+    bottom: -44,
+    left: -38,
+    width: 126,
+    height: 126,
+    borderRadius: 63,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  voucherHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  voucherIconWrap: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.92)',
+  },
+  voucherStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  voucherStatusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#BBF7D0',
+  },
+  voucherStatusText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontFamily: 'Inter-ExtraBold',
+  },
+  voucherName: {
+    color: '#FFFFFF',
+    fontSize: isWeb ? 20 : 18,
+    fontFamily: 'Inter-ExtraBold',
+  },
+  voucherDescription: {
+    marginTop: 4,
+    minHeight: 34,
+    color: 'rgba(255,255,255,0.86)',
+    fontSize: isWeb ? 13 : 12,
+    lineHeight: 17,
+    fontFamily: 'Inter-Medium',
+  },
+  voucherDivider: {
+    marginVertical: 12,
+    height: 1,
+    overflow: 'hidden',
+  },
+  voucherDash: {
+    height: 1,
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.32)',
+  },
+  voucherCodeRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  voucherCodeLabel: {
+    color: 'rgba(255,255,255,0.72)',
+    fontSize: 10,
+    fontFamily: 'Inter-Bold',
+    marginBottom: 2,
+  },
+  voucherCode: {
+    color: '#FFFFFF',
+    fontSize: isWeb ? 15 : 13,
+    fontFamily: 'Inter-ExtraBold',
+    letterSpacing: 0,
+  },
+  voucherPointsBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+  },
+  voucherPointsText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontFamily: 'Inter-ExtraBold',
+  },
+  myVoucherEmpty: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.82)',
+    backgroundColor: 'rgba(255,255,255,0.62)',
+  },
+  myVoucherEmptyText: {
+    flex: 1,
+    fontSize: isWeb ? 13 : 12,
+    color: '#64748B',
+    lineHeight: 18,
+    fontFamily: 'Inter-Medium',
+  },
+
   // Redeem History
   redeemHistorySection: {
     marginTop: 16,
@@ -1201,6 +1534,10 @@ const styles = StyleSheet.create({
     fontSize: isWeb ? 11 : 10,
     fontFamily: 'Inter-Bold',
   },
+  redeemHistoryTouchable: {
+    borderRadius: 16,
+    marginBottom: 8,
+  },
   redeemHistoryCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1214,7 +1551,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 18,
     elevation: 1,
-    marginBottom: 8,
     gap: 10,
     overflow: 'hidden',
   },
@@ -1270,6 +1606,130 @@ const styles = StyleSheet.create({
     fontSize: isWeb ? 13 : 12,
     color: '#64748B',
     fontFamily: 'Inter-Medium',
+  },
+  redeemDetailOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+  },
+  redeemDetailBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(15,23,42,0.42)',
+  },
+  redeemDetailModal: {
+    width: '100%',
+    maxWidth: 460,
+    borderRadius: 24,
+    padding: isWeb ? 24 : 18,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.82)',
+    backgroundColor: 'rgba(255,255,255,0.74)',
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 18 },
+    shadowOpacity: 0.18,
+    shadowRadius: 32,
+    elevation: 10,
+    overflow: 'hidden',
+  },
+  redeemDetailHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
+  redeemDetailIcon: {
+    width: 58,
+    height: 58,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(16,185,129,0.12)',
+  },
+  redeemDetailHeaderText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  redeemDetailEyebrow: {
+    fontSize: 11,
+    color: '#16A34A',
+    fontFamily: 'Inter-ExtraBold',
+    marginBottom: 2,
+  },
+  redeemDetailTitle: {
+    fontSize: isWeb ? 23 : 20,
+    color: '#133B1C',
+    fontFamily: 'Inter-ExtraBold',
+  },
+  redeemDetailSubtitle: {
+    marginTop: 2,
+    fontSize: 12,
+    color: '#64748B',
+    fontFamily: 'Inter-Medium',
+  },
+  redeemDetailCloseButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.58)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.8)',
+  },
+  redeemDetailPointCard: {
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 14,
+    backgroundColor: 'rgba(239,68,68,0.07)',
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.12)',
+  },
+  redeemDetailPointLabel: {
+    fontSize: 12,
+    color: '#64748B',
+    fontFamily: 'Inter-Bold',
+    marginBottom: 4,
+  },
+  redeemDetailPointValueWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  redeemDetailPointValue: {
+    fontSize: 28,
+    color: '#EF4444',
+    fontFamily: 'Inter-ExtraBold',
+  },
+  redeemDetailRows: {
+    gap: 10,
+  },
+  redeemDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.46)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.72)',
+  },
+  redeemDetailRowLabel: {
+    fontSize: 12,
+    color: '#64748B',
+    fontFamily: 'Inter-Bold',
+  },
+  redeemDetailRowValue: {
+    flex: 1,
+    textAlign: 'right',
+    fontSize: 13,
+    color: '#133B1C',
+    fontFamily: 'Inter-ExtraBold',
+  },
+  redeemDetailStatus: {
+    color: '#16A34A',
   },
 
   // Footer Tip
